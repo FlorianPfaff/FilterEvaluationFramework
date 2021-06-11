@@ -69,11 +69,6 @@ end
 fprintf('Using mode %s\n', mode);
 
 [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode);
-% If no filter states are there, overwrite extractMean to just give out
-% the last estimate
-if ~isfield(results, 'lastFilterStates')
-    extractMean = @(x, config, run)x(config).lastEstimates{run};
-end
 
 plotFromZero = true;
 timeLabel = 'Time taken in ms per time step';
@@ -81,11 +76,13 @@ timeLabel = 'Time taken in ms per time step';
 % Multiply with 1000 to get ms instead of seconds.
 timesFactor = 1 / size(groundtruths{1}, 2) * 1000;
 
-
 if ~isfield(results, 'lastFilterStates') && ~isfield(results, 'lastEstimates')
     error('No filter states and estimates were found. Something is wrong here.');
 elseif ~isfield(results, 'lastFilterStates')
+    % If no filter states are there, overwrite extractMean to just give out
+    % the last estimate
     warning('Filter states not found. Use lastEstimates generated during run time');
+    extractMean = 'useStored';
 end
 if isfield(results, 'allEstimates')
     error('All filter states were saved. It is highly likely that this negatively impacted the run times. Comment out this line if you are sure you want to proceed.');

@@ -28,7 +28,9 @@ for config = 1:size(results, 2)
         currGts = groundtruths;
     end
     for run = 1:numel(groundtruths)
-        if isa(extractMean, 'function_handle')
+        if ~isfield(results, 'lastFilterStates')
+            finalEstimate = results(config).lastEstimates{run};
+        elseif isa(extractMean, 'function_handle')
             if nargout == 1
                 finalEstimate = extractMean(results(config).lastFilterStates(run));
             elseif nargout == 2

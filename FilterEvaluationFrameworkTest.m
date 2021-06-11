@@ -233,6 +233,22 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
                 'filterParams', {[5, 7], [21, 31]});
             startEvaluation(scenarioName, filters, noRuns, plotEachStep = true, saveFolder = tempFixture.Folder, extractAllPointEstimates = true);
         end
+        
+        function testConvertToPointEstimateDuringRuntime(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            import matlab.unittest.fixtures.TemporaryFolderFixture
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            tempFixture = testCase.applyFixture(TemporaryFolderFixture);
+            
+            noRuns = 10;
+            scenarioName = 'se2randomDirectedWalk';
+            filters = struct('name', {'se2iukf', 'pf', 'se2bf', 's3f'}, ...
+                'filterParams', {[1e-3, 1e-2, 1e-1, 1], [101, 201], NaN, ...
+                [150, 200]});
+            startEvaluation(scenarioName, filters, noRuns, scenarioCustomizationParams=50,...
+                saveFolder=tempFixture.Folder, convertToPointEstimateDuringRuntime=true, tolerateFailure=true);
+            plotResults();
+        end
     end
 end
 %
