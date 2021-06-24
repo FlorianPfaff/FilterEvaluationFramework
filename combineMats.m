@@ -1,11 +1,11 @@
 function [results, groundtruths, scenarioParam] = combineMats(filenamesOrPath, checkForEqualScenariosThroughly, saveMat)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V1.2
 arguments
     filenamesOrPath {mustBeA(filenamesOrPath, {'char', 'cell'}), mustBeNonempty}
     checkForEqualScenariosThroughly(1, 1) logical = false
-    saveMat (1,1) logical = true
+    saveMat (1,1) logical = false
 end
 % Needs to contain date, therefore 20
 if iscell(filenamesOrPath) || contains(filenamesOrPath, '20') % Multiple or single file given as name
