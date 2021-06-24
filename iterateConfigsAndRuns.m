@@ -1,4 +1,7 @@
 function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure)
+% @author Florian Pfaff pfaff@kit.edu
+% @date 2016-2021
+% V1.2
 arguments
     scenarioParam struct
     filters struct
@@ -105,6 +108,8 @@ for filterNo = 1:numel(filters)
     end
 end
 assert(all(all(isnan(t) == runFailed)), 'Measured times should not be nan if the rund id not fail.');
+% The line below prevents that we do not notice that some filter is broken.
+assert(~any(all(runFailed,2)), 'All configs of a certain filter configuration failed. Check if this is plausible and disable the config if it is plausible that it always fails.');
 % Repmat for ground truth and measurements to save identical ground truth to all configs
 % in struct
 % Create struct from info
