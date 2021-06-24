@@ -1,10 +1,11 @@
-function [results, groundtruths, scenarioParam] = combineMats(filenamesOrPath, checkForEqualScenariosThroughly)
+function [results, groundtruths, scenarioParam] = combineMats(filenamesOrPath, checkForEqualScenariosThroughly, saveMat)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
 % V1.0
 arguments
     filenamesOrPath {mustBeA(filenamesOrPath, {'char', 'cell'}), mustBeNonempty}
-    checkForEqualScenariosThroughly(1, 1) logical = true
+    checkForEqualScenariosThroughly(1, 1) logical = false
+    saveMat (1,1) logical = true
 end
 % Needs to contain date, therefore 20
 if iscell(filenamesOrPath) || contains(filenamesOrPath, '20') % Multiple or single file given as name
@@ -15,8 +16,6 @@ else % Path is given
     cd(filenamesOrPath);
     files = dir('*.mat');
     multipleScenarios = true;
-    disp('Use the script to generate multiple combined files for multiple scenarios. This will overwrite existing files. Press enter to proceed');
-    pause;
 end
 
 matInfos = [];
@@ -33,11 +32,15 @@ if (numel(scenariosInFiles) > 1) && ~multipleScenarios
 end
 for currScenario = scenariosInFiles
     matsCurrScenario = matInfos(contains({matInfos.scenario}, currScenario));
-    load(matsCurrScenario(1).filename, 'scenarioParam', 'hostname', 'groundtruths', 'results')
+    load(matsCurrScenario(1).filename, 'scenarioParam', 'hostname', 'groundtruths', 'results', 'measurements')
     allSeedsSoFar = scenarioParam.allSeeds;
     for currMatIndex = 2:length(matsCurrScenario)
+        fprintf('loading file %d\n',currMatIndex);
         currMat = load(matsCurrScenario(currMatIndex).filename);
-        assert(strcmp(currMat.hostname, hostname), 'You should not combine mats from different computers!');
+        % Remove artifacts that came up on long term training on a server
+        % computer
+        assert(strcmp(erase(currMat.hostname,{newline,char(13),'^[OA'}), erase(hostname,{newline,char(13),'^[OA'})),...
+            'You should not combine mats from different computers!');
         assert(~currMat.scenarioParam.plot, 'Do not use runs in which plotting was enabled');
 
         assert(isempty(intersect(currMat.scenarioParam.allSeeds, allSeedsSoFar)), 'Same seed, i.e., identical scenarios were used!');
@@ -61,11 +64,19 @@ for currScenario = scenariosInFiles
             if isfield(results, 'lastFilterStates')
                 results(currConfigIndex).lastFilterStates = [results(currConfigIndex).lastFilterStates, currMat.results(currConfigIndex).lastFilterStates];
             end
+            if isfield(results, 'measurements')
+                results(currConfigIndex).measurements = [results(currConfigIndex).measurements, currMat.results(currConfigIndex).measurements];
+            end
         end
     end
-    if multipleScenarios
+    if saveMat
         fprintf('Current scenario: %s\nTotal number of configurations: %d\nTotal number of runs: %d\n', currScenario{1}, numel(results), numel(results(1).timeTaken));
-        save([currScenario{1}, ' combined.mat'], 'results', 'scenarioParam', 'hostname');
+        saveFn = [currScenario{1}, ' combined.mat'];
+        if exist(saveFn,'file')
+            fprintf('File %s already exists. Press any key to overwrite.', saveFn);
+            pause
+        end
+        save(saveFn, 'results', 'scenarioParam', 'hostname', 'groundtruths', 'measurements');
     end
 end
 scenarioParam.allSeeds = allSeedsSoFar;
