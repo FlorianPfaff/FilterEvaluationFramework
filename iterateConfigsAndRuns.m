@@ -97,7 +97,7 @@ for filterNo = 1:numel(filters)
                 end
                 warning on
                 runFailed(currConfigIndex, r) = true;
-                warning('filter %i config %i run %i FAILED\n', filterNo, config, r);
+                warning('filter %i config %i run %i FAILED: %s\n', filterNo, config, r, err.message);
                 warning off
             end
             if mod(r-1, plotEvery) == 0
