@@ -21,6 +21,9 @@ arguments
     opt.tolerateFailure (1, 1) logical = false
     % Use unit32 to avoid the bad case seed=0, which can happen when uint32 is cast to double
     opt.initialSeed (1, 1) uint32 {mustBePositive} = RandStream.create('mrg32k3a', 'Seed', 'Shuffle').Seed
+    % This can make sense if you want to guarantee there is no overlap by
+    % setting numbers manually.
+    opt.consecutiveSeed (1,1) logical = false
 end
 [saveFolder, plotEachStep, convertToPointEstimateDuringRuntime, extractAllPointEstimates, scenarioCustomizationParams, tolerateFailure, initialSeed] = ...
     deal(opt.saveFolder, opt.plotEachStep, opt.convertToPointEstimateDuringRuntime, ...
@@ -36,10 +39,12 @@ else % Lookup information for scenario and set/overwrite parameters.
 end
 scenarioParam.plot = plotEachStep;
 scenarioParam = checkAndFixParams(scenarioParam);
-% When setting seed manually, always increase by large number because
-% seed is counted up for the runs
-scenarioParam.allSeeds = initialSeed:initialSeed + noRuns - 1;
-
+if opt.consecutiveSeed
+    scenarioParam.allSeeds = initialSeed:initialSeed + noRuns - 1;
+else
+    tmpStream = RandStream.create('mrg32k3a', 'Seed', initialSeed);
+    scenarioParam.allSeeds = tmpStream.randi(intmax,[1,noRuns]);
+end
 % Generate all estimates by iterating over all filters and configurations.
 [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure);
 
