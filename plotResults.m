@@ -90,7 +90,8 @@ end
 allDeviationsLastMat = determineAllDeviations(results, extractMean, distanceFunction, meanCalculationSymm, groundtruths);
 
 allDeviationsLast = cellfun(@(x)num2cell(x, 2), allDeviationsLastMat, 'UniformOutput', false);
-allErrors = arrayfun(@(i)mean([allDeviationsLast{i}{:}]), 1:numel(allDeviationsLast));
+% Calculate mean (omit inf values of failed runs)
+allErrors = arrayfun(@(i)mean([allDeviationsLast{i}{~isinf([allDeviationsLast{i}{:}])}]), 1:numel(allDeviationsLast));
 allStds = arrayfun(@(i)std([allDeviationsLast{i}{:}]), 1:numel(allDeviationsLast));
 allMeanTimes = cellfun(@(c)mean(c), {results.timeTaken});
 
