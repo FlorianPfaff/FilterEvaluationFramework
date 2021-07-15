@@ -39,8 +39,9 @@ for currScenario = scenariosInFiles
         currMat = load(matsCurrScenario(currMatIndex).filename);
         % Remove artifacts that came up on long term training on a server
         % computer
-        assert(strcmp(erase(currMat.hostname,{newline,char(13),'^[OA'}), erase(hostname,{newline,char(13),'^[OA'})),...
-            'You should not combine mats from different computers!');
+        if ~(strcmp(erase(currMat.hostname,{newline,char(13),'^[OA'}), erase(hostname,{newline,char(13),'^[OA'})))
+            warning('Comining mats from differnet computers may lead to invalid run times!');
+        end
         assert(~currMat.scenarioParam.plot, 'Do not use runs in which plotting was enabled');
 
         assert(isempty(intersect(currMat.scenarioParam.allSeeds, allSeedsSoFar)), 'Same seed, i.e., identical scenarios were used!');
