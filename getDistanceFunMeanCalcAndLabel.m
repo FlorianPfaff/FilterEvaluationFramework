@@ -61,7 +61,7 @@ function est = extractEstimateSE2(filterState)
 if isa(filterState, 'SE2BinghamDistribution')
     est = filterState.mode();
 else
-    est = filterState.hybridMean(); % Without () to allow extracting it from a struct
+    est = filterState.hybridMean; % Without () to allow extracting it from a struct
 end
 end
 
