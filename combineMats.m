@@ -7,6 +7,7 @@ arguments
     checkForEqualScenariosThroughly(1, 1) logical = false
     saveMat (1,1) logical = false
 end
+warnStatus = warning('on');
 % Needs to contain date, therefore 20
 if iscell(filenamesOrPath) || contains(filenamesOrPath, '20') % Multiple or single file given as name
     files = struct('name', filenamesOrPath);
@@ -40,11 +41,19 @@ for currScenario = scenariosInFiles
         % Remove artifacts that came up on long term training on a server
         % computer
         if ~(strcmp(erase(currMat.hostname,{newline,char(13),'^[OA'}), erase(hostname,{newline,char(13),'^[OA'})))
-            warning('Comining mats from differnet computers may lead to invalid run times!');
+            warning('Combining mats from differnet computers may lead to invalid run times!');
         end
         assert(~currMat.scenarioParam.plot, 'Do not use runs in which plotting was enabled');
 
-        assert(isempty(intersect(currMat.scenarioParam.allSeeds, allSeedsSoFar)), 'Same seed, i.e., identical scenarios were used!');
+        if ~isempty(intersect(currMat.scenarioParam.allSeeds, allSeedsSoFar))
+            
+            warning('Same seed, i.e., identical scenarios were used!');
+            userChoice = input(sprintf('Press enter to skip %s, type d and enter to delete file.\n', matsCurrScenario(currMatIndex).filename),'s');
+            if strcmp(userChoice,'d')
+                delete(matsCurrScenario(currMatIndex).filename);
+            end
+            continue
+        end
         allSeedsSoFar = [allSeedsSoFar, currMat.scenarioParam.allSeeds]; %#ok<AGROW>
 
         assert(all(cellfun(@(x, y)isequal(x, y) || isa(x, 'function_handle'), ...
@@ -95,4 +104,5 @@ end
 if multipleScenarios
     cd(currDir) % Go back to current directory
 end
+warning(warnStatus);
 end
