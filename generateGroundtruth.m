@@ -3,7 +3,7 @@ function groundtruth = generateGroundtruth(x0, scenarioParam)
 % a function generating the next point (including the noise!).
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V1.1
 groundtruth(:, 1) = x0;
 if isfield(scenarioParam, 'genNextStateWithNoise')
     for t = 2:scenarioParam.timesteps
@@ -11,16 +11,21 @@ if isfield(scenarioParam, 'genNextStateWithNoise')
     end
 elseif isfield(scenarioParam, 'sysNoise') % If sysnoise given, shift by prediction and then sample from sysnoise
     for t = 2:scenarioParam.timesteps
+        if isfield(scenarioParam, 'genNextStateWithoutNoise')
+            stateToAddNoiseTo = scenarioParam.genNextStateWithoutNoise(groundtruth(:, t-1));
+        else
+            stateToAddNoiseTo  = groundtruth(:, t-1);
+        end
         if isa(scenarioParam.sysNoise, 'AbstractHypertoroidalDistribution')
-            groundtruth(:, t) = groundtruth(:, t-1) + scenarioParam.sysNoise.sample(1);
+            groundtruth(:, t) = stateToAddNoiseTo + scenarioParam.sysNoise.sample(1);
         elseif isa(scenarioParam.sysNoise, 'VMFDistribution')
             assert(isequal(scenarioParam.sysNoise.mu, [0; 0; 1]));
             sysNoise = scenarioParam.sysNoise;
-            sysNoise.mu = groundtruth(:, t-1);
+            sysNoise.mu = stateToAddNoiseTo;
             groundtruth(:, t) = sysNoise.sample(1);
         elseif ismethod(scenarioParam.sysNoise, 'shift')
             sysNoise = scenarioParam.sysNoise;
-            sysNoise = sysNoise.shift(groundtruth(:, t - 1));
+            sysNoise = sysNoise.shift(stateToAddNoiseTo);
             groundtruth(:, t) = sysNoise.sample(1);
         else
             error('SysNoise not supported')
