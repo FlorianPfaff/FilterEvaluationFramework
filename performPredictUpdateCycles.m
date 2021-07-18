@@ -11,6 +11,7 @@ arguments
 end
 % Configure filter
 [filter, predictionRoutine] = configureForFilter(filterParam, scenarioParam, precalculatedParams);
+cumulatedUpdatesPreferred = (contains(filterParam.name, 'shf')); % Currently this only provides an advantage for the shf
 
 if scenarioParam.useLikelihood && isfield(scenarioParam, 'likelihood') && ~iscell(scenarioParam.likelihood)
     scenarioParam.likelihood = repmat({scenarioParam.likelihood}, 1, scenarioParam.timesteps);
@@ -39,18 +40,18 @@ for t = 1:scenarioParam.timesteps
         end
         assert(isequal(size(likelihood.a), size(filter.getEstimate().a)));
         filter.updateIdentity(likelihood);
-    elseif ~scenarioParam.plot && (contains(filterParam.name, 'shf'))
-        % Only for filters that can handle multiple update steps at
+    elseif ~scenarioParam.plot && (contains(filterParam.name, 'shf')) && scenarioParam.measPerStep>1
+        % Only for filters that handle multiple update steps at
         % once better than consective steps. This can only be used if
-        % not the result should not be visualized. All update steps are
+        % the result should not be visualized. All update steps are
         % assumed to use the same likelihood.
-        if contains(scenarioParam.name, 'xyz')
-            filter.updateNonlinear(repmat(scenarioParam.likelihood(t), 1, scenarioParam.measPerStep), ...
-                num2cell(measurements(:, (t - 1) * scenarioParam.measPerStep + 1:t * scenarioParam.measPerStep)));
-        else
-            filter.updateNonlinear(scenarioParam.likelihood{t}, measurements(:, t));
-        end
+        filter.updateNonlinear(repmat(scenarioParam.likelihood(t), 1, scenarioParam.measPerStep), ...
+            num2cell(measurements(:, (t - 1) * scenarioParam.measPerStep + 1:t * scenarioParam.measPerStep)));
     else
+        if (contains(filterParam.name, 'shf')) && scenarioParam.measPerStep>1
+            warning('EvalFramework:FuseSquentiallyForPlot', 'When plotting, fuse measurements sequentially');
+            warning('off', 'EvalFramework:FuseSquentiallyForPlot');
+        end
         for m = 1:scenarioParam.measPerStep
             currMeas = measurements(:, (t - 1)*scenarioParam.measPerStep+m);
             if strcmpi(filterParam.name, 's3f')
