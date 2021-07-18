@@ -1,7 +1,7 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V1.1
 arguments
     scenarioParam struct {mustBeNonempty}
     filterParam struct {mustBeNonempty}
@@ -40,7 +40,7 @@ for t = 1:scenarioParam.timesteps
         end
         assert(isequal(size(likelihood.a), size(filter.getEstimate().a)));
         filter.updateIdentity(likelihood);
-    elseif ~scenarioParam.plot && (contains(filterParam.name, 'shf')) && scenarioParam.measPerStep>1
+    elseif ~scenarioParam.plot && cumulatedUpdatesPreferred && scenarioParam.measPerStep>1
         % Only for filters that handle multiple update steps at
         % once better than consective steps. This can only be used if
         % the result should not be visualized. All update steps are
@@ -48,7 +48,7 @@ for t = 1:scenarioParam.timesteps
         filter.updateNonlinear(repmat(scenarioParam.likelihood(t), 1, scenarioParam.measPerStep), ...
             num2cell(measurements(:, (t - 1) * scenarioParam.measPerStep + 1:t * scenarioParam.measPerStep)));
     else
-        if (contains(filterParam.name, 'shf')) && scenarioParam.measPerStep>1
+        if cumulatedUpdatesPreferred && scenarioParam.measPerStep>1
             warning('EvalFramework:FuseSquentiallyForPlot', 'When plotting, fuse measurements sequentially');
             warning('off', 'EvalFramework:FuseSquentiallyForPlot');
         end
