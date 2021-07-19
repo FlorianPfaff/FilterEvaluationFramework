@@ -1,7 +1,7 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.1
+% V2.0
 arguments
     scenarioParam struct {mustBeNonempty}
     filterParam struct {mustBeNonempty}
@@ -10,11 +10,14 @@ arguments
     precalculatedParams struct = struct()
 end
 % Configure filter
-[filter, predictionRoutine] = configureForFilter(filterParam, scenarioParam, precalculatedParams);
+[filter, predictionRoutine, likelihoodsForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams);
 cumulatedUpdatesPreferred = (contains(filterParam.name, 'shf')); % Currently this only provides an advantage for the shf
 
-if scenarioParam.useLikelihood && isfield(scenarioParam, 'likelihood') && ~iscell(scenarioParam.likelihood)
-    scenarioParam.likelihood = repmat({scenarioParam.likelihood}, 1, scenarioParam.timesteps);
+performCumulativeUpdates = cumulatedUpdatesPreferred && scenarioParam.measPerStep>1;
+if cumulatedUpdatesPreferred && scenarioParam.measPerStep>1 && scenarioParam.plot % Disable when plotting
+    warning('EvalFramework:FuseSquentiallyForPlot', 'When plotting, measurements are fused sequentially.');
+    warning('off', 'EvalFramework:FuseSquentiallyForPlot');
+    performCumulativeUpdates = false;
 end
 
 if scenarioParam.plot
@@ -24,46 +27,52 @@ allEstimates = NaN(size(groundtruth));
 tic;
 % Perform evaluation
 for t = 1:scenarioParam.timesteps
-
     %% Update
-    if contains(scenarioParam.name, 'rotate') && (contains(filterParam.name, 'sqff'))
-        outputData = scenarioParam.likelihoodCoeffsGenerator(measurements(:, t));
-        if contains(scenarioParam.netPath, 'Real')
-            likelihood = FourierDistribution(outputData(1, 1:(size(outputData, 2) + 1) / 2), ...
-                outputData(1, (size(outputData, 2) + 1) / 2 + 1:end), 'sqrt');
-        elseif contains(scenarioParam.netPath, 'Complex')
-            a = 2 * outputData(1, 1:(size(outputData, 2) + 1)/2);
-            b = -2 * outputData(1, (size(outputData, 2) + 1)/2+1:end);
-            likelihood = FourierDistribution(a, b, 'sqrt');
-        else
-            error('Unknown mode')
-        end
-        assert(isequal(size(likelihood.a), size(filter.getEstimate().a)));
-        filter.updateIdentity(likelihood);
-    elseif ~scenarioParam.plot && cumulatedUpdatesPreferred && scenarioParam.measPerStep>1
-        % Only for filters that handle multiple update steps at
-        % once better than consective steps. This can only be used if
-        % the result should not be visualized. All update steps are
-        % assumed to use the same likelihood.
-        filter.updateNonlinear(repmat(scenarioParam.likelihood(t), 1, scenarioParam.measPerStep), ...
-            num2cell(measurements(:, (t - 1) * scenarioParam.measPerStep + 1:t * scenarioParam.measPerStep)));
+    if performCumulativeUpdates
+        nUpdates = 1;
+        % Use all measurements
+        currMeas = num2cell(measurements(:, (t - 1) * scenarioParam.measPerStep + 1:t * scenarioParam.measPerStep));
     else
-        if cumulatedUpdatesPreferred && scenarioParam.measPerStep>1
-            warning('EvalFramework:FuseSquentiallyForPlot', 'When plotting, fuse measurements sequentially');
-            warning('off', 'EvalFramework:FuseSquentiallyForPlot');
+        nUpdates = scenarioParam.measPerStep;
+        currMeas = measurements(:, (t - 1)*scenarioParam.measPerStep+1);
+    end
+    for m = 1:nUpdates
+        if contains(scenarioParam.name, 'rotate') && (contains(filterParam.name, 'sqff'))
+            outputData = scenarioParam.likelihoodCoeffsGenerator(currMeas);
+            if contains(scenarioParam.netPath, 'Real')
+                likelihood = FourierDistribution(outputData(1, 1:(size(outputData, 2) + 1) / 2), ...
+                    outputData(1, (size(outputData, 2) + 1) / 2 + 1:end), 'sqrt');
+            elseif contains(scenarioParam.netPath, 'Complex')
+                a = 2 * outputData(1, 1:(size(outputData, 2) + 1)/2);
+                b = -2 * outputData(1, (size(outputData, 2) + 1)/2+1:end);
+                likelihood = FourierDistribution(a, b, 'sqrt');
+            else
+                error('Unknown mode.')
+            end
+            assert(isequal(size(likelihood.a), size(filter.getEstimate().a)));
+            filter.updateIdentity(likelihood);
+        elseif performCumulativeUpdates
+            % Only for filters that handle multiple update steps at
+            % once better than consective steps. This can only be used if
+            % the result should not be visualized. All update steps are
+            % assumed to use the same likelihood.
+            filter.updateNonlinear(likelihoodsForFilter((t - 1) * scenarioParam.measPerStep + 1:t * scenarioParam.measPerStep), currMeas);
+        elseif ~scenarioParam.useLikelihood
+            filter.updateIdentity(measNoiseForFilter, currMeas);
+        elseif strcmpi(filterParam.name, 's3f')
+            filter.update([], GaussianDistribution(currMeas, scenarioParam.gaussianMeasNoise.C))
+        elseif strcmpi(filterParam.name, 'se2iukf')
+            filter.updatePositionMeasurement(scenarioParam.gaussianMeasNoise.C, currMeas)
+        elseif scenarioParam.useLikelihood && ~strcmpi(filterParam.name, 'bingham')
+            filter.updateNonlinear(likelihoodsForFilter{t}, currMeas);
+        else
+            error('Unsupported configuration.');
         end
-        for m = 1:scenarioParam.measPerStep
-            currMeas = measurements(:, (t - 1)*scenarioParam.measPerStep+m);
-            if strcmpi(filterParam.name, 's3f')
-                filter.update([], GaussianDistribution(currMeas, scenarioParam.gaussianMeasNoise.C))
-            elseif strcmpi(filterParam.name, 'se2iukf')
-                filter.updatePositionMeasurement(scenarioParam.gaussianMeasNoise.C, currMeas)
-            elseif scenarioParam.useLikelihood && ~strcmpi(filterParam.name, 'bingham')
-                filter.updateNonlinear(scenarioParam.likelihood{t}, currMeas);
-            end
-            if scenarioParam.plot
-                plotFilterState(filter, groundtruth, measurements, t, m);
-            end
+        if scenarioParam.plot
+            plotFilterState(filter, groundtruth, measurements, t, m);
+        end
+        if m~=nUpdates % If not last measurement, next one is current one.
+            currMeas = measurements(:, (t - 1)*scenarioParam.measPerStep+m+1);
         end
     end
 

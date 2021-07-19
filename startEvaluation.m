@@ -1,7 +1,7 @@
 function startEvaluation(scenario, filters, noRuns, opt)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V2.0
 arguments
     scenario char
     % Struct with filternames and number of parameters. See
@@ -28,6 +28,7 @@ end
 [saveFolder, plotEachStep, convertToPointEstimateDuringRuntime, extractAllPointEstimates, scenarioCustomizationParams, tolerateFailure, initialSeed] = ...
     deal(opt.saveFolder, opt.plotEachStep, opt.convertToPointEstimateDuringRuntime, ...
     opt.extractAllPointEstimates, opt.scenarioCustomizationParams, opt.tolerateFailure, opt.initialSeed);
+assert(isequal(unique({filters.name}),sort({filters.name})), 'One filter was chosen more than once. To use the filter with different configurations, pass an array of parameters instead.');
 % Scenario: Name of scenario or entire parameterization
 % filters: struct of cellstring with names and params.
 if isstruct(scenario)

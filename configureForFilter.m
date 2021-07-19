@@ -1,4 +1,17 @@
-function [filter, predictionRoutine] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
+function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
+% @author Florian Pfaff pfaff@kit.edu
+% @date 2016-2021
+% V2.0
+if isfield(scenarioParam, 'likelihood')
+    likelihoodForFilter = scenarioParam.likelihood; % Is overwritten below if necessary
+else
+    likelihoodForFilter = [];
+end
+if isfield(scenarioParam, 'measNoise')
+    measNoiseForFilter = scenarioParam.measNoise; % Is overwritten below if necessary
+else
+    measNoiseForFilter = [];
+end
 switch filterParam.name
     case 'twn'
         filter = ToroidalWNFilter();
@@ -13,11 +26,13 @@ switch filterParam.name
 
         assert(isa(scenarioParam.sysNoise, 'AbstractToroidalDistribution'))
         if ~isa(scenarioParam.sysNoise, 'ToroidalWNDistribution')
-            tfdSys = ToroidalFourierDistribution.fromDistribution(sysNoise, 9, 'identity');
-            scenarioParam.sysNoise = tfdSys.toTWN;
+            tfdSys = ToroidalFourierDistribution.fromDistribution(scenarioParam.sysNoise, 9, 'identity');
+            sysNoiseForFilter = tfdSys.toTWN;
+        else
+            sysNoiseForFilter = scenarioParam.sysNoise;
         end
         predictionRoutine = @()filter.predictNonlinear( ...
-            @(x)scenarioParam.genNextStateWithoutNoise(x), scenarioParam.sysNoise);
+            @(x)scenarioParam.genNextStateWithoutNoise(x), sysNoiseForFilter);
     case {'iff', 'sqff', 'ffidResetOnPred', 'ffsqrtResetOnPred'}
         if strfind(filterParam.name, 'iff')
             trans = 'identity';
@@ -33,6 +48,15 @@ switch filterParam.name
             filter.setState(HypertoroidalFourierDistribution.fromDistribution(scenarioParam.initialPrior, coeffs, trans));
         else
             error('Prior not supported');
+        end
+        if ~scenarioParam.useLikelihood
+            if isa(filter, 'FourierFilter')
+                measNoiseForFilter = FourierDistribution.fromDistribution(scenarioParam.measNoise, coeffs, trans);
+            elseif isa(filter, 'HypertoroidalFourierFilter')
+                measNoiseForFilter = HypertoroidalFourierDistribution.fromDistribution(scenarioParam.measNoise, coeffs, trans);
+            else
+                error('Configuration not supported');
+            end
         end
         if contains(filterParam.name, 'ResetOnPred')
             fdUniform = FourierDistribution.fromDistribution(CircularUniformDistribution, filterParam.parameter);
@@ -67,31 +91,29 @@ switch filterParam.name
         filter = FIGFilter(filterParam.parameter);
         predictionRoutine = @()filter.setState(FIGDistribution.fromDistribution( ...
             CircularUniformDistribution(), filterParam.parameter));
-    case 'ishf'
-        filter = SphericalHarmonicsFilter(filterParam.parameter, 'identity');
-        shdInit = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
-            scenarioParam.initialPrior, filterParam.parameter, 'identity');
-        filter.setState(shdInit);
-        if strcmp(scenarioParam.sysNoise, 'none')
-            predictionRoutine = @()[];
-        else
-            scenarioParam.sysNoise = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
-                scenarioParam.sysNoise, filterParam.parameter, 'identity');
-            predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
+    case {'ishf','sqshf'}
+        if strfind(filterParam.name, 'ishf')
+            trans = 'identity';
+        elseif strfind(filterParam.name, 'sqshf')
+            trans = 'sqrt';
         end
-    case 'sqshf'
-        filter = SphericalHarmonicsFilter(filterParam.parameter, 'sqrt');
+        filter = SphericalHarmonicsFilter(filterParam.parameter, trans);
         shdInit = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
-            scenarioParam.initialPrior, filterParam.parameter, 'sqrt');
+            scenarioParam.initialPrior, filterParam.parameter, trans);
         filter.setState(shdInit);
-
         if strcmp(scenarioParam.sysNoise, 'none')
             predictionRoutine = @()[];
         else
-            sysNoiseSqrt = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
-                scenarioParam.sysNoise, filterParam.parameter, 'sqrt');
-            scenarioParam.sysNoise = sysNoiseSqrt.transformViaCoefficients('square', 2*filterParam.parameter);
-            predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
+            sysNoiseForFilter = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
+                scenarioParam.sysNoise, filterParam.parameter, trans);
+            if strcmp(trans,'sqrt')
+                sysNoiseForFilter = sysNoiseForFilter.transformViaCoefficients('square', 2*filterParam.parameter);
+            end
+            predictionRoutine = @()filter.predictIdentity(sysNoiseForFilter);
+        end
+        if isfield(scenarioParam, 'measNoise')
+            measNoiseForFilter = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
+                scenarioParam.measNoise, filterParam.parameter, trans);
         end
     case 'pf'
         noParticles = filterParam.parameter;
@@ -166,22 +188,14 @@ switch filterParam.name
         inputs = reshape(scenarioParam.stepSize*[cos(precalculatedParams.condPeriodic.getGrid()); sin(precalculatedParams.condPeriodic.getGrid())], 2, 1, 1, size(filter.apd.gd.gridValues, 1));
         predictionRoutine = @()filter.predictLinear( ...
             precalculatedParams.condPeriodic, scenarioParam.gaussianSysNoise.C, [], inputs);
-
-        scenarioParam.useLikelihood = false;
     case 'se2bf'
         filter = SE2BinghamFilter();
         filter.setState(precalculatedParams.priorForFilter);
-
-        scenarioParam.likelihood = @(z, x)scenarioParam.likelihood(z, ...
+        likelihoodForFilter = @(z, x)scenarioParam.likelihood(z, ...
             AbstractSE2Distribution.dualQuaternionToAnglePos(x));
-        sysFunForSE2BF = @(x, w)AbstractSE2Distribution.anglePosToDualQuaternion( ...
-            scenarioParam.genNextStateWithoutNoise(AbstractSE2Distribution.dualQuaternionToAnglePos(x)) ...
-            +AbstractSE2Distribution.dualQuaternionToAnglePos(w));
-        predictionRoutine = @()filter.predictNonlinear(sysFunForSE2BF, precalculatedParams.sysNoiseForFilter);
+        predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithoutNoise, precalculatedParams.sysNoiseForFilter);
     case 'se2iukf'
         filter = SE2InvariantUKF(3, filterParam.parameter*ones(3, 1));
-        %             filter.setState([scenarioParam.initialPriorPeriodic.mu;scenarioParam.initialPriorLinear.mean()],...
-        %                 blkdiag(scenarioParam.initialPriorPeriodic.toWN.sigma^2,scenarioParam.initialPriorLinear.C));
         filter.setState([scenarioParam.initialPriorPeriodic.mu; scenarioParam.initialPriorLinear.mean()], ...
             blkdiag(scenarioParam.initialPriorLinear.C, scenarioParam.initialPriorPeriodic.toWN.sigma^2));
 
@@ -202,4 +216,15 @@ switch filterParam.name
         predictionRoutine = @()NaN; % Do nothing
     otherwise
         error('Filter currently unsupported');
+end
+if scenarioParam.useLikelihood && isfield(scenarioParam, 'likelihood') && ~iscell(likelihoodForFilter)
+    likelihoodForFilter = repmat({likelihoodForFilter}, 1, scenarioParam.timesteps);
+elseif numel(likelihoodForFilter)  == scenarioParam.timesteps
+    likelihoodForFilter = reshape(repmat(likelihoodForFilter(:)',[scenarioParam.measPerStep,1]),1,[]);
+elseif numel(likelihoodForFilter)  == scenarioParam.measPerStep
+    likelihoodForFilter = repmat(likelihoodForFilter(:)',[1,scenarioParam.timesteps]);
+elseif isempty(likelihoodForFilter) % Do nothing
+else
+    error('Likelihood is in unknown format');
+end
 end

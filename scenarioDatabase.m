@@ -1,7 +1,7 @@
 function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V2.0
 scenarioParam = struct('initialPrior', @()error('Scenario param not initialized'), ...
     'timesteps', NaN, 'measPerStep', 1, 'allSeeds', NaN);
 switch scenario
@@ -169,7 +169,7 @@ switch scenario
         sigmaX = 0.3;
         sigmaY = 0.3;
         sigmaZ = 0.3;
-        scenarioParam.measPerStep = 5;
+        scenarioParam.measPerStep = 3;
         scenarioParam.measGenerator = {@(x)normrnd(x(1), sigmaX), ...
             @(x)normrnd(x(2), sigmaY), @(x)normrnd(x(3), sigmaZ), ...
             @(x)normrnd(x(1), sigmaX), @(x)normrnd(x(2), sigmaY), ...
@@ -181,6 +181,7 @@ switch scenario
             @(z, x)normpdf(x(1, :), z, sigmaX), @(z, x)normpdf(x(2, :), z, sigmaY), ...
             @(z, x)normpdf(x(3, :), z, sigmaZ), @(z, x)normpdf(x(1, :), z, sigmaX), ...
             @(z, x)normpdf(x(2, :), z, sigmaY), @(z, x)normpdf(x(3, :), z, sigmaZ)};
+        scenarioParam.useLikelihood = true;
     case 'S2azAndEleNoiseSphere'
         scenarioParam.manifoldType = 'hypersphere';
         scenarioParam.azNoise = VMDistribution(0, 3);
@@ -198,7 +199,8 @@ switch scenario
             fTransVMAzEleForSinglexk(xkk, xk(:, i), scenarioParam.azNoise, scenarioParam.eleNoise), ...
             1:size(xk, 2), 'UniformOutput', false)');
 
-        scenarioParam.likelihood = @(z, x) exp(scenarioParam.kappaMeas*x'*z); % Normalization not necessary
+        scenarioParam.likelihood = @(z, x) exp(scenarioParam.kappaMeas*z'*x); % Normalization not necessary
+        scenarioParam.useLikelihood = true;
     case 'S2nlerp'
         scenarioParam.manifoldType = 'hypersphere';
         scenarioParam.timesteps = 10;

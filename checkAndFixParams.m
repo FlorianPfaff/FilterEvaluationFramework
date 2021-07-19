@@ -1,16 +1,16 @@
 function scenarioParam = checkAndFixParams(scenarioParam)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V2.0
 if ~isfield(scenarioParam, 'useTransition')
     scenarioParam.useTransition = false;
 end
 if ~isfield(scenarioParam, 'useLikelihood')
     scenarioParam.useLikelihood = false;
 end
+assert(isfield(scenarioParam, 'likelihood') == scenarioParam.useLikelihood, 'Likelihood is given but useLikelihood is not set (or the other way around). This is unexpected.');
 assert(isfield(scenarioParam, 'manifoldType')); % See manifoldType in plotResults, e.g., hypertorus
 assert(~scenarioParam.useTransition || isfield(scenarioParam, 'genNextStateWithoutNoise') || isfield(scenarioParam, 'genNextStateWithNoise'), 'Must have function genNextStateWithoutNoise for nonlinear prediction.');
-assert(~scenarioParam.useLikelihood || ~isfield(scenarioParam, 'measNoise'), 'No measNoise should be given if using likelihood')
 % Cannot have both measNoise and measGenerator
 assert(nargout == 1); % Check that params are fixed!
 assert(isfield(scenarioParam, 'useLikelihood') && isfield(scenarioParam, 'useTransition'));

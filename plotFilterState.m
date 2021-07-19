@@ -40,6 +40,9 @@ elseif isa(filter, 'AbstractHypersphericalFilter') || isa(filter.getEstimate(), 
     scatter3(mu(1), mu(2), mu(3), 100, [1, 1, 0], 'filled');
     drawnow
 elseif isa(filter, 'AbstractSE2Filter') || isa(filter.getEstimate(), 'AbstractSE2Distribution')
+    if isa(filter, 'SE2InvariantUKF')
+        error('Plotting state not supported for IUKF');
+    end
     if measIndex == 0
         figNo = 765;
         currTitle = 'Prior';
@@ -67,7 +70,7 @@ elseif isa(filter, 'AbstractSE2Filter') || isa(filter.getEstimate(), 'AbstractSE
     xlim(xlimits)
     ylim(ylimits)
     AbstractSE2Distribution.plotSE2trajectory(groundtruth(1, (max(timeIndex - 10, 1)):timeIndex), groundtruth(2:3, (max(timeIndex - 10, 1)):timeIndex), false);
-    scatter(measurements(1, (max(timeIndex - 10, 1)):timeIndex), measurements(2, (max(timeIndex - 10, 1)):timeIndex));
+    scatter(measurements(1, (max(timeIndex - 10, 1)):timeIndex), measurements(2, (max(timeIndex - 10, 1)):timeIndex), 'x');
 else
     error('Cannot plot for this domain.');
 end
