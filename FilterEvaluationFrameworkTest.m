@@ -1,14 +1,14 @@
 classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
     % @author Florian Pfaff pfaff@kit.edu
     % @date 2016-2021
-    % V2.0
+    % V2.1
     methods (Test)
         function testCircularFilters(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             import matlab.unittest.fixtures.TemporaryFolderFixture
             tempFixture = testCase.applyFixture(TemporaryFolderFixture);
 
-            noRuns = 100;
+            noRuns = 10;
             scenarioName = 'S1IgorsFunction';
             filters = struct( ...
                 'name', {'iff', 'sqff', 'fig', 'figResetOnPred', 'pf'}, ...
@@ -23,7 +23,7 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
             import matlab.unittest.fixtures.TemporaryFolderFixture
             tempFixture = testCase.applyFixture(TemporaryFolderFixture);
 
-            noRuns = 100;
+            noRuns = 10;
             scenarioName = 'T2unimodal';
             filters = struct( ...
                 'name', {'iff', 'sqff', 'pf', 'twn'}, ...
@@ -117,7 +117,7 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             import matlab.unittest.fixtures.TemporaryFolderFixture
             tempFixture = testCase.applyFixture(TemporaryFolderFixture);
-            noRuns = 100;
+            noRuns = 10;
             scenarioName = 'S2xyzSequentiallyThreeTimes';
             filters = struct( ...
                 'name', {'ishf', 'sqshf', 'pf'}, ...
@@ -151,7 +151,7 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
             testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
             tempFixture = testCase.applyFixture(TemporaryFolderFixture);
 
-            noRuns = 100;
+            noRuns = 10;
             scenarioName = 'S2SymmNlerp';
             filters = struct( ...
                 'name', {'hgf', 'hhgf', 'hgfSymm', 'pf'}, ...
@@ -184,8 +184,7 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
             testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
             paramTimeAndErrorPerFilter = plotResults();
             isSE2bf = strcmp({paramTimeAndErrorPerFilter.filterName}, 'se2bf');
-            testCase.verifyLessThan([paramTimeAndErrorPerFilter(~isSE2bf).meanErrorAllConfigs], 0.5*pi);
-            testCase.verifyLessThan([paramTimeAndErrorPerFilter(isSE2bf).meanErrorAllConfigs], 1.5*pi);
+            testCase.verifyLessThan([paramTimeAndErrorPerFilter(~isSE2bf).meanErrorAllConfigs], 1.5);
         end
         function testRandomFilter(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
@@ -253,12 +252,12 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
             import matlab.unittest.fixtures.TemporaryFolderFixture
             tempFixture = testCase.applyFixture(TemporaryFolderFixture);
             
-            noRuns = 3;
+            noRuns = 10;
             scenarioName = 'se2randomDirectedWalk';
             filters = struct('name', {'pf', 'se2bf', 's3f'}, ...
                 'filterParams', {[101, 201], NaN, [150, 200]});
             startEvaluation(scenarioName, filters, noRuns, scenarioCustomizationParams=3,...
-                saveFolder=tempFixture.Folder, plotEachStep=true, convertToPointEstimateDuringRuntime=true, tolerateFailure=true);
+                saveFolder=tempFixture.Folder, plotEachStep=false, convertToPointEstimateDuringRuntime=true, tolerateFailure=true);
             testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
             plotResults();
         end

@@ -1,7 +1,7 @@
 function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2020
-% V1.0
+% V2.1
 arguments
     filenames {mustBeA(filenames, {'cell', 'char'})} = ''
     plotLog(2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
@@ -93,7 +93,7 @@ allDeviationsLast = cellfun(@(x)num2cell(x, 2), allDeviationsLastMat, 'UniformOu
 % Calculate mean (omit inf values of failed runs)
 allErrors = arrayfun(@(i)mean([allDeviationsLast{i}{~isinf([allDeviationsLast{i}{:}])}]), 1:numel(allDeviationsLast));
 allStds = arrayfun(@(i)std([allDeviationsLast{i}{:}]), 1:numel(allDeviationsLast));
-allMeanTimes = cellfun(@(c)mean(c), {results.timeTaken});
+allMeanTimes = cellfun(@(c)mean(c,'omitnan'), {results.timeTaken});
 
 % If MTT: Output association quality
 if size(groundtruths{1}, 3) > 1
@@ -126,7 +126,7 @@ filterNames = allNames(ismember(allNames, {results.filterName}));
 if numel(filterNames) < numel(unique({results.filterName}))
     warning('One of the filters is unknown');
 end
-paramTimeAndErrorPerFilter = struct('filterName', filterNames, 'allParams', [], 'allTimes', [], 'allErrors', []);
+paramTimeAndErrorPerFilter = struct('filterName', filterNames, 'allParams', [], 'meanTimesAllConfigs', [], 'meanErrorAllConfigs', []);
 % Iteriere über die Namen und nimm dann alle Einträge, bei denen der
 % Filtername passt.
 handlesErrorOverParam = [];
@@ -295,6 +295,8 @@ figure(1);
 ax(1) = gca;
 if minParam == maxParam
     xlim([1, 1.1 * maxParam]);
+elseif isnan(minParam)||isnan(maxParam)
+    xlim([0,1]);
 else
     xlim([minParam, maxParam]);
 end
@@ -306,6 +308,8 @@ figure(2);
 ax(2) = gca;
 if minParam == maxParam
     xlim([1, 1.1 * maxParam]);
+elseif isnan(minParam)||isnan(maxParam)
+    xlim([0,1]);
 else
     xlim([minParam, maxParam]);
 end
@@ -315,7 +319,7 @@ ylabel(timeLabel);
 title('Time over number of parameters')
 figure(3);
 ax(3) = gca;
-if minParam == maxParam
+if min(allMeanTimes) == max(allMeanTimes)
     xlim([0, max(allMeanTimes) * timesFactor]);
 else
     xlim(minmax(allMeanTimes(~strcmp({results.filterName}, 'twn') & ~strcmp({results.filterName}, 'randomSphere') & ~strcmp({results.filterName}, 'randomTorus')))*timesFactor);

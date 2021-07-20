@@ -1,8 +1,15 @@
 function precalculatedParams = precalculateParams(scenarioParam, filterParam)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V2.1
 switch filterParam.name
+    case 'twn'
+        if ~scenarioParam.useLikelihood && ~isa(scenarioParam.measNoise, 'ToroidalWNDistribution')
+            s = scenarioParam.measNoise.sample(100000);
+            precalculatedParams.measNoiseForFilter = ToroidalWNDistribution.mleNumerical(s);
+        else
+            precalculatedParams = [];
+        end
     case 'htgf'
         if scenarioParam.useTransition
             precalculatedParams.fTrans_tdxtd = ...

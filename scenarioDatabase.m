@@ -1,7 +1,7 @@
 function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.0
+% V2.1
 scenarioParam = struct('initialPrior', @()error('Scenario param not initialized'), ...
     'timesteps', NaN, 'measPerStep', 1, 'allSeeds', NaN);
 switch scenario
@@ -222,7 +222,7 @@ switch scenario
         %%%%%%%Symmetric hyperspherical / Hyperhemispherical scenarios%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     case 'S2SymmNlerp'
-        scenarioParam.manifoldType = 'hypersphere';
+        scenarioParam.manifoldType = 'hypersphereSymm';
         scenarioParam.timesteps = 10;
         scenarioParam.measPerStep = 1;
         scenarioParam.u = [0; -1; 0];

@@ -37,7 +37,16 @@ for currScenario = scenariosInFiles
     allSeedsSoFar = scenarioParam.allSeeds;
     for currMatIndex = 2:length(matsCurrScenario)
         fprintf('loading file %d\n',currMatIndex);
-        currMat = load(matsCurrScenario(currMatIndex).filename);
+        try
+            currMat = load(matsCurrScenario(currMatIndex).filename);
+        catch
+            warning('File could not be loaded.');
+            userChoice = input(sprintf('Press enter to skip %s, type d and enter to delete file.\n', matsCurrScenario(currMatIndex).filename),'s');
+            if strcmp(userChoice,'d')
+                delete(matsCurrScenario(currMatIndex).filename);
+            end
+            continue
+        end
         % Remove artifacts that came up on long term training on a server
         % computer
         if ~(strcmp(erase(currMat.hostname,{newline,char(13),'^[OA'}), erase(hostname,{newline,char(13),'^[OA'})))
@@ -46,7 +55,6 @@ for currScenario = scenariosInFiles
         assert(~currMat.scenarioParam.plot, 'Do not use runs in which plotting was enabled');
 
         if ~isempty(intersect(currMat.scenarioParam.allSeeds, allSeedsSoFar))
-            
             warning('Same seed, i.e., identical scenarios were used!');
             userChoice = input(sprintf('Press enter to skip %s, type d and enter to delete file.\n', matsCurrScenario(currMatIndex).filename),'s');
             if strcmp(userChoice,'d')

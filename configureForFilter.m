@@ -1,7 +1,7 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.0
+% V2.1
 if isfield(scenarioParam, 'likelihood')
     likelihoodForFilter = scenarioParam.likelihood; % Is overwritten below if necessary
 else
@@ -23,6 +23,9 @@ switch filterParam.name
             initialPrior = scenarioParam.initialPrior;
         end
         filter.setState(initialPrior);
+        if ~scenarioParam.useLikelihood && ~isa(scenarioParam.measNoise, 'ToroidalWNDistribution')
+            measNoiseForFilter = precalculatedParams.measNoiseForFilter;
+        end
 
         assert(isa(scenarioParam.sysNoise, 'AbstractToroidalDistribution'))
         if ~isa(scenarioParam.sysNoise, 'ToroidalWNDistribution')

@@ -1,7 +1,7 @@
 function [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V2.1
 arguments
     mode char
 end
@@ -59,7 +59,7 @@ end
 
 function est = extractEstimateSE2(filterState)
 if isa(filterState, 'SE2BinghamDistribution')
-    est = filterState.mode();
+    est = AbstractSE2Distribution.dualQuaternionToAnglePos(filterState.mode());
 else
     est = filterState.hybridMean; % Without () to allow extracting it from a struct
 end
