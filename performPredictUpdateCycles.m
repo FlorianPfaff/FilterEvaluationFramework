@@ -1,7 +1,7 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.0
+% V2.1
 arguments
     scenarioParam struct {mustBeNonempty}
     filterParam struct {mustBeNonempty}
@@ -37,33 +37,23 @@ for t = 1:scenarioParam.timesteps
         currMeas = measurements(:, (t - 1)*scenarioParam.measPerStep+1);
     end
     for m = 1:nUpdates
-        if contains(scenarioParam.name, 'rotate') && (contains(filterParam.name, 'sqff'))
-            outputData = scenarioParam.likelihoodCoeffsGenerator(currMeas);
-            if contains(scenarioParam.netPath, 'Real')
-                likelihood = FourierDistribution(outputData(1, 1:(size(outputData, 2) + 1) / 2), ...
-                    outputData(1, (size(outputData, 2) + 1) / 2 + 1:end), 'sqrt');
-            elseif contains(scenarioParam.netPath, 'Complex')
-                a = 2 * outputData(1, 1:(size(outputData, 2) + 1)/2);
-                b = -2 * outputData(1, (size(outputData, 2) + 1)/2+1:end);
-                likelihood = FourierDistribution(a, b, 'sqrt');
-            else
-                error('Unknown mode.')
-            end
-            assert(isequal(size(likelihood.a), size(filter.getEstimate().a)));
-            filter.updateIdentity(likelihood);
+        if ~scenarioParam.useLikelihood
+            assert(~performCumulativeUpdates, 'Cumulative updates only supported when using likelihoods');
+            filter.updateIdentity(measNoiseForFilter, currMeas);
         elseif performCumulativeUpdates
             % Only for filters that handle multiple update steps at
             % once better than consective steps. This can only be used if
             % the result should not be visualized. All update steps are
             % assumed to use the same likelihood.
             filter.updateNonlinear(likelihoodsForFilter((t - 1) * scenarioParam.measPerStep + 1:t * scenarioParam.measPerStep), currMeas);
-        elseif ~scenarioParam.useLikelihood
-            filter.updateIdentity(measNoiseForFilter, currMeas);
+        elseif isfield(scenarioParam, 'likelihoodGenerator')
+            likelihood = scenarioParam.likelihoodGenerator(currMeas);
+            filter.updateIdentity(likelihood);
         elseif strcmpi(filterParam.name, 's3f')
             filter.update([], GaussianDistribution(currMeas, scenarioParam.gaussianMeasNoise.C))
         elseif strcmpi(filterParam.name, 'se2iukf')
             filter.updatePositionMeasurement(scenarioParam.gaussianMeasNoise.C, currMeas)
-        elseif scenarioParam.useLikelihood && ~strcmpi(filterParam.name, 'bingham')
+        elseif ~strcmpi(filterParam.name, 'bingham')
             filter.updateNonlinear(likelihoodsForFilter{t}, currMeas);
         else
             error('Unsupported configuration.');
