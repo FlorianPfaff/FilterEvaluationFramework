@@ -184,7 +184,7 @@ switch filterParam.name
         filter.setState(scenarioParam.initialPrior);
         predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithoutNoise, VMFDistribution([0; 0; 1], scenarioParam.kappaSysNoise));
     case 's3f'
-        filter = AreaPartFilter();
+        filter = StateSpaceSubdivisionFilter();
         filter.setState(precalculatedParams.priorForFilter);
         %             predictionRoutine=@()filter.predictNonlinear(...
         %                     @(x)scenarioParam.genNextStateWithoutNoise(x),scenarioParam.sysNoise);
