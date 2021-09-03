@@ -1,7 +1,7 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.1
+% V2.2
 if isfield(scenarioParam, 'likelihood')
     likelihoodForFilter = scenarioParam.likelihood; % Is overwritten below if necessary
 else
@@ -129,30 +129,30 @@ switch filterParam.name
                 filter.setState(scenarioParam.initialPrior);
 
                 if isfield(scenarioParam, 'genNextStateWithNoise')
-                    predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithNoise, 'none');
+                    predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithNoise, [], scenarioParam.genNextStateWithNoiseIsVectorized);
                 elseif isfield(scenarioParam, 'sysNoise')
-                    predictionRoutine = @()filter.predictNonlinear(@(x)x, scenarioParam.sysNoise);
+                    predictionRoutine = @()filter.predictNonlinear(@(x)x, scenarioParam.sysNoise, true);
                 end
             case {'hypersphere', 'hypersphereGeneral', 'hypersphereSymm'}
                 filter = HypersphericalParticleFilter(noParticles, scenarioParam.initialPrior.dim);
                 filter.setState(scenarioParam.initialPrior);
 
                 if isfield(scenarioParam, 'genNextStateWithNoise')
-                    predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithNoise, []);
+                    predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithNoise, [], scenarioParam.genNextStateWithNoiseIsVectorized);
                 elseif isfield(scenarioParam, 'sysNoise')
-                    predictionRoutine = @()filter.predictNonlinear(@(x)x, scenarioParam.sysNoise);
+                    predictionRoutine = @()filter.predictNonlinear(@(x)x, scenarioParam.sysNoise, true);
                 end
             case 'hypercylinder'
                 filter = HypercylindricalParticleFilter(noParticles, ...
                     scenarioParam.initialPrior.boundD, scenarioParam.initialPrior.linD);
                 filter.setState(SE2DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
                 predictionRoutine = @()filter.predictNonlinear( ...
-                    scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise);
+                    scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
             case 'se2'
                 filter = SE2ParticleFilter(noParticles);
                 filter.setState(SE2DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
                 predictionRoutine = @()filter.predictNonlinear( ...
-                    scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise);
+                    scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
             otherwise
                 error('Manifold unsupported.');
         end

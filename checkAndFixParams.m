@@ -1,7 +1,7 @@
 function scenarioParam = checkAndFixParams(scenarioParam)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.1
+% V2.2
 if ~isfield(scenarioParam, 'useTransition')
     scenarioParam.useTransition = false;
 end
@@ -24,5 +24,26 @@ if isfield(scenarioParam, 'sysNoise') && ischar(scenarioParam.sysNoise) && strcm
     scenarioParam.applySysNoiseTimes = false(1, scenarioParam.timesteps);
 elseif ~isfield(scenarioParam, 'applySysNoiseTimes')
     scenarioParam.applySysNoiseTimes = [true(1, scenarioParam.timesteps - 1), false];
+end
+if isfield(scenarioParam,'genNextStateWithNoise')&&~isfield(scenarioParam,'genNextStateWithNoiseIsVectorized')
+    % Fail if does not work at all
+    scenarioParam.genNextStateWithNoise(scenarioParam.initialPrior.sample(1));
+    try % See if vectorized works
+        scenarioParam.genNextStateWithNoise(scenarioParam.initialPrior.sample(11));
+        scenarioParam.genNextStateWithNoiseIsVectorized = true;
+    catch
+        warning('Apparently genNextStateWithNoise is not vectorized. This may negatively impact the performance of the particle filter.')
+        scenarioParam.genNextStateWithNoiseIsVectorized = false;
+    end
+end
+if isfield(scenarioParam,'genNextStateWithoutNoise')&&~isfield(scenarioParam,'genNextStateWithoutNoiseIsVectorized')
+    scenarioParam.genNextStateWithoutNoise(scenarioParam.initialPrior.sample(1));
+    try % See if vectorized works
+        scenarioParam.genNextStateWithoutNoise(scenarioParam.initialPrior.sample(11));
+        scenarioParam.genNextStateWithoutNoiseIsVectorized = true;
+    catch
+        warning('Apparently genNextStateWithoutNoise is not vectorized. This may negatively impact the performance of the particle filter.')
+        scenarioParam.genNextStateWithoutNoiseIsVectorized = false;
+    end
 end
 end

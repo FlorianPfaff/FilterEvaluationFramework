@@ -289,7 +289,7 @@ switch scenario
 
         scenarioParam.stepSize = 1;
         scenarioParam.genNextStateWithoutNoise = ...
-            @(x)[x(1, :); x(2:3, :) + scenarioParam.stepSize * [cos(x(1)); sin(x(1))]];
+            @(x)[x(1, :); x(2:3, :) + scenarioParam.stepSize * [cos(x(1, :)); sin(x(1, :))]];
 
         scenarioParam.inputsGenerator = @(fullGrid)reshape(stepSize*[cos(fullGrid); sin(fullGrid)], 2, 1, 1, size(apf.getEstimate().gd.gridValues, 1));
         scenarioParam.measGenerator = @(x)x(2:3) + scenarioParam.gaussianMeasNoise.sample(1);
