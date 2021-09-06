@@ -1,7 +1,7 @@
 function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.0
+% V2.3
 arguments
     scenarioParam struct
     filters struct
@@ -49,10 +49,10 @@ for filterNo = 1:numel(filters)
         clear -global xyz2plm plm2xyz
         % Precalculate expensive stuff (do not initialize filters to
         % avoid, e.g., particle filter from becoming deterministic.
-        fprintf('filter %i config %i performing precalculations\n', filterNo, config);
+        fprintf('filter %i (%s) config %i (%i) performing precalculations\n', filterNo, filters(filterNo).name, config, filters(filterNo).filterParams(config));
         precalculatedParams = precalculateParams(scenarioParam, filterParam);
         % Do a run before to prevent variation in run times
-        fprintf('filter %i config %i doing dry run\n', filterNo, config);
+        fprintf('filter %i (%s) config %i (%i) doing dry run\n', filterNo, filters(filterNo).name, config, filters(filterNo).filterParams(config));
         warning on % Allow warnings in dry run to see if anything may be wrong.
         % Use last scenario to prevent gaining an advantage by having the same inputs in the next run
         try
@@ -73,7 +73,7 @@ for filterNo = 1:numel(filters)
         warning off
         for r = 1:noRuns
             if mod(r-1, plotEvery) == 0
-                fprintf('filter %i config %i run %i\n', filterNo, config, r);
+                fprintf('filter %i (%s) config %i (%i) run %i\n', filterNo, filters(filterNo).name, config, filters(filterNo).filterParams(config), r);
             end
             try
                 if ~convertToPointEstimateDuringRuntime && ~extractAllPointEstimates
