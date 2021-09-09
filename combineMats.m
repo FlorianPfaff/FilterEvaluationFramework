@@ -1,11 +1,16 @@
-function [results, groundtruths, scenarioParam] = combineMats(filenamesOrPath, checkForEqualScenariosThroughly, saveMat)
+function [results, groundtruths, scenarioParam] = combineMats(filenamesOrPath, checkForEqualScenariosThroughly, saveMat, defaultActionDuplicateScenario, defaultActionUnreadableFile)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.2
+% V2.5
 arguments
     filenamesOrPath {mustBeA(filenamesOrPath, {'char', 'cell'}), mustBeNonempty}
     checkForEqualScenariosThroughly(1, 1) logical = false
     saveMat (1,1) logical = false
+    % Choose default for duplicate scenarios. "d" means delete, "s" skip.
+    % Leave empty to be asked
+    defaultActionDuplicateScenario (1,:) char {mustBeMember(defaultActionDuplicateScenario,{'','d','s'})} = ''
+    % Choose default for unredable file. "d" means delete, "s" skip
+    defaultActionUnreadableFile (1,:) char {mustBeMember(defaultActionUnreadableFile,{'','d','s'})} = ''
 end
 warnStatus = warning('on');
 % Needs to contain date, therefore 20
@@ -18,7 +23,9 @@ else % Path is given
     files = dir('*.mat');
     multipleScenarios = true;
 end
-
+if isempty(files)
+    error('No .mat files found.')
+end
 matInfos = [];
 for currFileIndex = 1:length(files)
     if ~isempty(strfind(files(currFileIndex).name, 'combined')) || ~isempty(strfind(files(currFileIndex).name, 'Combined'))
@@ -40,10 +47,13 @@ for currScenario = scenariosInFiles
         try
             currMat = load(matsCurrScenario(currMatIndex).filename);
         catch
-            warning('File could not be loaded.');
-            userChoice = input(sprintf('Press enter to skip %s, type d and enter to delete file.\n', matsCurrScenario(currMatIndex).filename),'s');
-            if strcmp(userChoice,'d')
+            if isempty(defaultActionUnreadableFile)
+                warning('File could not be loaded.');
+                userChoice = input(sprintf('Press enter to skip %s, type d and enter to delete file.\n', matsCurrScenario(currMatIndex).filename),'s');
+            end
+            if strcmp(defaultActionUnreadableFile,'d')||isempty(defaultActionUnreadableFile)&&strcmp(userChoice,'d')
                 delete(matsCurrScenario(currMatIndex).filename);
+                disp(['Deleting file ',matsCurrScenario(currMatIndex).filename]);
             end
             continue
         end
@@ -55,10 +65,13 @@ for currScenario = scenariosInFiles
         assert(~currMat.scenarioParam.plot, 'Do not use runs in which plotting was enabled');
 
         if ~isempty(intersect(currMat.scenarioParam.allSeeds, allSeedsSoFar))
-            warning('Same seed, i.e., identical scenarios were used!');
-            userChoice = input(sprintf('Press enter to skip %s, type d and enter to delete file.\n', matsCurrScenario(currMatIndex).filename),'s');
-            if strcmp(userChoice,'d')
+            if isempty(defaultActionDuplicateScenario)
+                warning('One of the scenarios has a previously seen seed, i.e., the file contains an already considered scenario.');
+                userChoice = input(sprintf('Press enter to skip %s, type d and enter to delete file.\n', matsCurrScenario(currMatIndex).filename),'s');
+            end
+            if strcmp(defaultActionDuplicateScenario,'d')||isempty(defaultActionDuplicateScenario)&&strcmp(userChoice,'d')
                 delete(matsCurrScenario(currMatIndex).filename);
+                disp(['Deleting file ',matsCurrScenario(currMatIndex).filename]);
             end
             continue
         end
