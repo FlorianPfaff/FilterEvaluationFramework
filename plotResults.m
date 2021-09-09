@@ -1,11 +1,14 @@
-function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds)
+function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds, linBoundedErrorMode)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2020
-% V2.1
+% @date 2016-2021
+% V2.4
 arguments
     filenames {mustBeA(filenames, {'cell', 'char'})} = ''
-    plotLog(2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
-    plotStds(1, 1) logical = false
+    plotLog (2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
+    plotStds (1, 1) logical = false
+    % Specify if only linear or only periodic part should be considered if
+    % state has both (e.g., for SE(2)).
+    linBoundedErrorMode char {mustBeMember(linBoundedErrorMode,{'','linear','bounded'})} = ''
 end
 plotLog = false(2, 3) | plotLog; % Use implicit expansion to pad it
 warning on
@@ -66,9 +69,9 @@ if ~isempty(allFigs)
     for currFig = figsToClear, clf(currFig), end
 end
 
-fprintf('Using mode %s\n', mode);
+fprintf('Using mode %s\n', [mode,linBoundedErrorMode]);
 
-[distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode);
+[distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel([mode,linBoundedErrorMode]);
 
 plotFromZero = true;
 timeLabel = 'Time taken in ms per time step';
@@ -121,7 +124,7 @@ end
 % for sqff
 allNames = {'grid', 'discrete', 'sqff', 'sqshf', 'iff', 'ishf', 'htgf', 'sgf', 'hgf', 'hhgf', ...
     'hgfSymm', 's3f', 'pf', 'htpf', 'kf', 'kf-maha', 'vm', 'bingham', 'wn', 'vmf', 'twn', 'dummy', ...
-    'random', 'random', 'se2bf', 'se2iukf', 'fig', 'figResetOnPred'};
+    'random', 'se2bf', 'se2iukf', 'fig', 'figResetOnPred'};
 filterNames = allNames(ismember(allNames, {results.filterName}));
 if numel(filterNames) < numel(unique({results.filterName}))
     warning('One of the filters is unknown');
@@ -172,8 +175,8 @@ for name = filterNames
             styleLine = '-';
         case {'kf', 'se2iukf'}
             color = [0.3010, 0.7450, 0.9330];
-            styleLine = '-';
             styleMarker = '*';
+            styleLine = '-';
         case {'hgfSymm', 'figResetOnPred'}
             color = [0.3010, 0.7450, 0.9330];
             styleMarker = '';
