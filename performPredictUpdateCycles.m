@@ -1,7 +1,7 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.1
+% V2.6
 arguments
     scenarioParam struct {mustBeNonempty}
     filterParam struct {mustBeNonempty}
@@ -51,7 +51,7 @@ for t = 1:scenarioParam.timesteps
             filter.updateIdentity(likelihood);
         elseif strcmpi(filterParam.name, 's3f')
             filter.update([], GaussianDistribution(currMeas, scenarioParam.gaussianMeasNoise.C))
-        elseif strcmpi(filterParam.name, 'se2iukf')
+        elseif strcmpi(filterParam.name, 'se2ukfm')
             filter.updatePositionMeasurement(scenarioParam.gaussianMeasNoise.C, currMeas)
         elseif ~strcmpi(filterParam.name, 'bingham')
             filter.updateNonlinear(likelihoodsForFilter{t}, currMeas);

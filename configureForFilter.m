@@ -197,8 +197,8 @@ switch filterParam.name
         likelihoodForFilter = @(z, x)scenarioParam.likelihood(z, ...
             AbstractSE2Distribution.dualQuaternionToAnglePos(x));
         predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithoutNoise, precalculatedParams.sysNoiseForFilter);
-    case 'se2iukf'
-        filter = SE2InvariantUKF(3, filterParam.parameter*ones(3, 1));
+    case 'se2ukfm'
+        filter = SE2UKFM(3, filterParam.parameter*ones(3, 1));
         filter.setState([scenarioParam.initialPriorPeriodic.mu; scenarioParam.initialPriorLinear.mean()], ...
             blkdiag(scenarioParam.initialPriorLinear.C, scenarioParam.initialPriorPeriodic.toWN.sigma^2));
 
