@@ -91,7 +91,7 @@ if isfield(results, 'allEstimates')
     error('All filter states were saved. It is highly likely that this negatively impacted the run times. Comment out this line if you are sure you want to proceed.');
 end
 allDeviationsLastMat = determineAllDeviations(results, extractMean, distanceFunction, meanCalculationSymm, groundtruths);
-
+assert(all([allDeviationsLastMat{:}]>=0,[1,2]));
 allDeviationsLast = cellfun(@(x)num2cell(x, 2), allDeviationsLastMat, 'UniformOutput', false);
 % Calculate mean (omit inf values of failed runs)
 allErrors = arrayfun(@(i)mean([allDeviationsLast{i}{~isinf([allDeviationsLast{i}{:}])}]), 1:numel(allDeviationsLast));
