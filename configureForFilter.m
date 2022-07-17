@@ -1,7 +1,7 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.2
+% V2.7
 if isfield(scenarioParam, 'likelihood')
     likelihoodForFilter = scenarioParam.likelihood; % Is overwritten below if necessary
 else
@@ -153,6 +153,11 @@ switch filterParam.name
                 filter.setState(SE2DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
                 predictionRoutine = @()filter.predictNonlinear( ...
                     scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
+            case 'se3'
+                filter = SE3ParticleFilter(noParticles);
+                filter.setState(SE3DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
+                predictionRoutine = @()filter.predictNonlinear( ...
+                    scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
             otherwise
                 error('Manifold unsupported.');
         end
@@ -188,7 +193,17 @@ switch filterParam.name
         filter.setState(precalculatedParams.priorForFilter);
         %             predictionRoutine=@()filter.predictNonlinear(...
         %                     @(x)scenarioParam.genNextStateWithoutNoise(x),scenarioParam.sysNoise);
-        inputs = reshape(scenarioParam.stepSize*[cos(precalculatedParams.condPeriodic.getGrid()); sin(precalculatedParams.condPeriodic.getGrid())], 2, 1, 1, size(filter.apd.gd.gridValues, 1));
+        switch scenarioParam.manifoldType
+            case 'se2'
+                % For scenario heading into the direction one is facing
+                inputs = reshape(scenarioParam.stepSize*[cos(precalculatedParams.condPeriodic.getGrid()); sin(precalculatedParams.condPeriodic.getGrid())], 2, 1, 1, size(filter.apd.gd.gridValues, 1));
+            case 'se3'
+                % For scenario heading into the direction one is facing
+                grid = precalculatedParams.condPeriodic.getGrid();
+                inputs = reshape(pagemtimes(scenarioParam.stepSize * quaternion(grid(1:4, :)').rotmat('point') , [1;0;0]), 3, 1, 1, size(filter.apd.gd.gridValues, 1));
+            otherwise
+                error('Manifold not supported')
+        end
         predictionRoutine = @()filter.predictLinear( ...
             precalculatedParams.condPeriodic, scenarioParam.gaussianSysNoise.C, [], inputs);
     case 'se2bf'

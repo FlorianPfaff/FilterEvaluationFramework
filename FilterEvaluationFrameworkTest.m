@@ -1,7 +1,7 @@
 classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
     % @author Florian Pfaff pfaff@kit.edu
     % @date 2016-2021
-    % V2.1
+    % V2.7
     methods (Test)
         function testCircularFilters(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
@@ -185,6 +185,20 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
             paramTimeAndErrorPerFilter = plotResults();
             isSE2bf = strcmp({paramTimeAndErrorPerFilter.filterName}, 'se2bf');
             testCase.verifyLessThan([paramTimeAndErrorPerFilter(~isSE2bf).meanErrorAllConfigs], 1.5);
+        end
+        function testSE3filters(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            import matlab.unittest.fixtures.TemporaryFolderFixture
+            tempFixture = testCase.applyFixture(TemporaryFolderFixture);
+
+            noRuns = 10;            
+            scenarioName = 'se3randomDirectedWalk';
+            filters = struct('name', {'s3f','pf'},'filterParams', {[5,15,25],[10,30,100,1000]});
+            startEvaluation(scenarioName, filters, noRuns, saveFolder = tempFixture.Folder, initialSeed = 1, scenarioCustomizationParams = 50);
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            paramTimeAndErrorPerFilter = plotResults();
+            testCase.verifyLessThan(paramTimeAndErrorPerFilter(1).meanErrorAllConfigs(end), 1.8);
+            testCase.verifyLessThan(paramTimeAndErrorPerFilter(2).meanErrorAllConfigs(end), 1.8);
         end
         function testRandomFilter(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture

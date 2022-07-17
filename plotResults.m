@@ -1,7 +1,7 @@
 function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds, linBoundedErrorMode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.4
+% V2.7
 arguments
     filenames {mustBeA(filenames, {'cell', 'char'})} = ''
     plotLog (2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
@@ -92,6 +92,7 @@ if isfield(results, 'allEstimates')
 end
 allDeviationsLastMat = determineAllDeviations(results, extractMean, distanceFunction, meanCalculationSymm, groundtruths);
 assert(all([allDeviationsLastMat{:}]>=0,[1,2]));
+assert(isreal([allDeviationsLastMat{:}]));
 allDeviationsLast = cellfun(@(x)num2cell(x, 2), allDeviationsLastMat, 'UniformOutput', false);
 % Calculate mean (omit inf values of failed runs)
 allErrors = arrayfun(@(i)mean([allDeviationsLast{i}{~isinf([allDeviationsLast{i}{:}])}]), 1:numel(allDeviationsLast));

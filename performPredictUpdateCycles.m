@@ -1,17 +1,17 @@
-function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams)
+function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams, cumulatedUpdatesPreferred)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.6
+% V2.7
 arguments
     scenarioParam struct {mustBeNonempty}
     filterParam struct {mustBeNonempty}
     groundtruth double {mustBeNonempty}
     measurements double {mustBeNonempty}
     precalculatedParams struct = struct()
+    cumulatedUpdatesPreferred = (contains(filterParam.name, 'shf')); % Currently this only provides an advantage for the shf
 end
 % Configure filter
 [filter, predictionRoutine, likelihoodsForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams);
-cumulatedUpdatesPreferred = (contains(filterParam.name, 'shf')); % Currently this only provides an advantage for the shf
 
 performCumulativeUpdates = cumulatedUpdatesPreferred && scenarioParam.measPerStep>1;
 if cumulatedUpdatesPreferred && scenarioParam.measPerStep>1 && scenarioParam.plot % Disable when plotting

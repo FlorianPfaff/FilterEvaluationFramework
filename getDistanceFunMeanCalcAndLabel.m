@@ -1,7 +1,7 @@
 function [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.4
+% V2.7
 arguments
     mode char
 end
@@ -55,6 +55,14 @@ switch mode
     case 'se2bounded'
         distanceFunction = @(xest, xtrue)norm(angularError(xest(1,:), xtrue(1,:)));
         extractMean = @extractEstimateSE2;
+        errorLabel = 'Error in radian';
+    case {'se3','se3linear'}
+        distanceFunction = @(x1, x2)vecnorm(x1(5:7, :)-x2(5:7, :));
+        extractMean = @(filterState)filterState.hybridMean();
+        errorLabel = 'Error in meters';
+    case 'se3bounded'
+        distanceFunction = @(x1, x2)min(acos(dot(x1(1:4), x2(1:4))), acos(dot(x1(1:4), -x2(1:4)))); % With two arguments to calculate it over the entire array
+        extractMean = @(filterState)filterState.hybridMean();
         errorLabel = 'Error in radian';
     otherwise
         error('Mode not recognized');

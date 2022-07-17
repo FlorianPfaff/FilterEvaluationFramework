@@ -295,6 +295,30 @@ switch scenario
         scenarioParam.measGenerator = @(x)x(2:3) + scenarioParam.gaussianMeasNoise.sample(1);
         scenarioParam.useLikelihood = true;
         scenarioParam.likelihood = @(z, x)mvnpdf(x(2:3, :)', z', scenarioParam.gaussianMeasNoise.C)';
+    case 'se3randomDirectedWalk'
+        scenarioParam.timesteps = 10;
+        scenarioParam.manifoldType = 'se3';
+        scenarioParam.measPerStep = 1;
+        % This normally does not need to accept vector-valued inputs, we do so for
+        % compatibility with the pf
+        scenarioParam.useTransition = true;
+        
+        scenarioParam.initialPriorPeriodic = HyperhemisphericalWatsonDistribution([0;0;0;1], 1);
+        scenarioParam.initialPriorLinear = GaussianDistribution([0; 0; 0], eye(3));
+        scenarioParam.initialPrior = SE3CartProdStackedDistribution( ...
+            {scenarioParam.initialPriorPeriodic; scenarioParam.initialPriorLinear});
+        
+        scenarioParam.watsonSysNoise = HyperhemisphericalWatsonDistribution([0;0;0;1], 1);
+        scenarioParam.gaussianSysNoise = GaussianDistribution([0; 0; 0], eye(3));
+        scenarioParam.sysNoise = SE3CartProdStackedDistribution( ...
+            {scenarioParam.watsonSysNoise, scenarioParam.gaussianSysNoise});
+        scenarioParam.gaussianMeasNoise = GaussianDistribution([0; 0; 0], eye(3));
+        scenarioParam.stepSize = 1;
+        scenarioParam.genNextStateWithoutNoise = ...
+            @(x)[x(1:4, :); x(5:7, :) + scenarioParam.stepSize * quaternion(x(1:4, :)').rotmat('point') * [1;0;0]];
+        scenarioParam.measGenerator = @(x)x(5:7) + scenarioParam.gaussianMeasNoise.sample(1);
+        scenarioParam.useLikelihood = true;
+        scenarioParam.likelihood = @(z, x)mvnpdf(x(5:7, :)', z', scenarioParam.gaussianMeasNoise.C)';
     otherwise
         warning('Scenario not recognized. Assuming scenarioCustomizationParams contains all parameters.')
         scenarioParam = scenarioCustomizationParams;
