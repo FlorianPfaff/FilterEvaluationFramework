@@ -2,6 +2,10 @@ function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
 % V2.1
+arguments
+    scenario char
+    scenarioCustomizationParams
+end
 scenarioParam = struct('initialPrior', @()error('Scenario param not initialized'), ...
     'timesteps', NaN, 'measPerStep', 1, 'allSeeds', NaN);
 switch scenario
@@ -320,8 +324,12 @@ switch scenario
         scenarioParam.useLikelihood = true;
         scenarioParam.likelihood = @(z, x)mvnpdf(x(5:7, :)', z', scenarioParam.gaussianMeasNoise.C)';
     otherwise
-        warning('Scenario not recognized. Assuming scenarioCustomizationParams contains all parameters.')
         scenarioParam = scenarioCustomizationParams;
+        if isempty(scenarioCustomizationParams)
+            error('Scenario not recongnized.')
+        else
+            warning('Scenario not recognized. Assuming scenarioCustomizationParams contains all parameters.')
+        end
 end
 end
 

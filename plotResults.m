@@ -1,14 +1,17 @@
 function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds, linBoundedErrorMode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.7
-arguments
+% V2.8
+arguments (Input)
     filenames {mustBeA(filenames, {'cell', 'char'})} = ''
     plotLog (2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
     plotStds (1, 1) logical = false
     % Specify if only linear or only periodic part should be considered if
     % state has both (e.g., for SE(2)).
     linBoundedErrorMode char {mustBeMember(linBoundedErrorMode,{'','linear','bounded'})} = ''
+end
+arguments (Output)
+    paramTimeAndErrorPerFilter struct
 end
 plotLog = false(2, 3) | plotLog; % Use implicit expansion to pad it
 warning on

@@ -1,7 +1,13 @@
 function scenarioParam = checkAndFixParams(scenarioParam)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.2
+% @date 2016-2022
+% V2.8
+arguments (Input)
+    scenarioParam (1,1) struct
+end
+arguments (Output)
+    scenarioParam (1,1) struct
+end
 if ~isfield(scenarioParam, 'useTransition')
     scenarioParam.useTransition = false;
 end

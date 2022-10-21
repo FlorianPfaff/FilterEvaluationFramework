@@ -2,8 +2,15 @@ function groundtruth = generateGroundtruth(x0, scenarioParam)
 % x0 is startingpoint. SysNoiseOrGenNext is either the system noise or
 % a function generating the next point (including the noise!).
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V1.1
+% @date 2016-2022
+% V2.8
+arguments (Input)
+    x0 (:,1) double
+    scenarioParam struct
+end
+arguments (Output)
+    groundtruth (:,:) double
+end
 groundtruth(:, 1) = x0;
 if isfield(scenarioParam, 'genNextStateWithNoise')
     for t = 2:scenarioParam.timesteps

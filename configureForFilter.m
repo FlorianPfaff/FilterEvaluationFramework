@@ -1,7 +1,18 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.7
+% @date 2016-2022
+% V2.8
+arguments  (Input)
+    filterParam struct
+    scenarioParam struct
+    precalculatedParams struct
+end
+arguments (Output)
+    filter AbstractFilter
+    predictionRoutine function_handle
+    likelihoodForFilter
+    measNoiseForFilter 
+end
 if isfield(scenarioParam, 'likelihood')
     likelihoodForFilter = scenarioParam.likelihood; % Is overwritten below if necessary
 else

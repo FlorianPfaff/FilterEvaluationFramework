@@ -1,6 +1,15 @@
 function boxplotFromCell(datacell, labelcell, varargin)
 % Varargin can be used to pass on additional arguments
-% V1.0 by Florian Pfaff pfaff@kit.edu
+% @author Florian Pfaff pfaff@kit.edu
+% @date 2016-2022
+% V2.8
+arguments (Input)
+    datacell cell
+    labelcell cell
+end
+arguments (Input, Repeating)
+    varargin
+end
 numelLargest = max(cellfun(@numel, datacell));
 boxplotMat = NaN(numelLargest, numel(datacell));
 for i = 1:numel(datacell)
