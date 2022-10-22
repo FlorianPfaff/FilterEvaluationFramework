@@ -1,7 +1,7 @@
 function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.9
+% @date 2016-2022
+% V2.10
 arguments
     scenario char
     scenarioCustomizationParams
@@ -285,6 +285,15 @@ switch scenario
         scenarioParam.measNoise = GaussianDistribution(zeros(4,1), 0.5*eye(4));
         scenarioParam.sysNoise = GaussianDistribution(zeros(4,1), 0.5*eye(4));
         scenarioParam.genNextStateWithoutNoiseIsVectorized = true;
+    case 'R4randomWalkWithInputs'
+        scenarioParam.manifoldType = 'Euclidean';
+        scenarioParam.timesteps = 10;
+        scenarioParam.initialPrior = GaussianDistribution(zeros(4,1), 0.5*eye(4));
+        scenarioParam.measNoise = GaussianDistribution(zeros(4,1), 0.5*eye(4));
+        scenarioParam.sysNoise = GaussianDistribution(zeros(4,1), 0.5*eye(4));
+        scenarioParam.genNextStateWithoutNoiseIsVectorized = true;
+        scenarioParam.genNextStateWithoutNoise = @(x, u) x+u;
+        scenarioParam.inputs = repmat(1:9, [4,1]);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%% SE2 scenarios %%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

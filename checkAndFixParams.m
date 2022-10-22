@@ -1,7 +1,7 @@
 function scenarioParam = checkAndFixParams(scenarioParam)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2022
-% V2.8
+% V2.10
 arguments (Input)
     scenarioParam (1,1) struct
 end
@@ -52,4 +52,6 @@ if isfield(scenarioParam,'genNextStateWithoutNoise')&&~isfield(scenarioParam,'ge
         scenarioParam.genNextStateWithoutNoiseIsVectorized = false;
     end
 end
+if ~isfield(scenarioParam, 'inputs')
+    scenarioParam.inputs = [];
 end

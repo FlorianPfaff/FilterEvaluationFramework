@@ -1,7 +1,7 @@
 classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
     % @author Florian Pfaff pfaff@kit.edu
     % @date 2016-2021
-    % V2.9
+    % V2.10
     methods (Test)
         function testCircularFilters(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
@@ -304,6 +304,22 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
                 saveFolder=tempFixture.Folder, plotEachStep=false, convertToPointEstimateDuringRuntime=true, tolerateFailure=true);
             testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
             plotResults();
+        end
+
+        function testInputs(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            import matlab.unittest.fixtures.TemporaryFolderFixture
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            tempFixture = testCase.applyFixture(TemporaryFolderFixture);
+
+            noRuns = 10;
+            scenarioName = 'R4randomWalkWithInputs';
+            filters = struct( ...
+                'name', {'kf', 'pf'}, 'filterParams', {NaN, [31, 51]});
+            startEvaluation(scenarioName, filters, noRuns, saveFolder = tempFixture.Folder, initialSeed = 1);
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            paramTimeAndErrorPerFilter = plotResults();
+            testCase.verifyLessThan([paramTimeAndErrorPerFilter.meanErrorAllConfigs], 1.5);
         end
     end
 end

@@ -1,7 +1,7 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams, cumulatedUpdatesPreferred)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.7
+% V2.10
 arguments
     scenarioParam struct {mustBeNonempty}
     filterParam struct {mustBeNonempty}
@@ -73,7 +73,11 @@ for t = 1:scenarioParam.timesteps
 
     %% Predict
     if scenarioParam.applySysNoiseTimes(t) % Per default, no prediction is performed in the last time step
-        predictionRoutine();
+        if isempty(scenarioParam.inputs)
+            predictionRoutine();
+        else
+            predictionRoutine(scenarioParam.inputs(:,t));
+        end
         if scenarioParam.plot && t ~= scenarioParam.timesteps % No gt for timeesteps+1 so cannot plot then
             plotFilterState(filter, groundtruth, measurements, t+1, 0);
         end

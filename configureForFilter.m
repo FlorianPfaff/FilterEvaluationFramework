@@ -1,7 +1,7 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2022
-% V2.9
+% V2.10
 arguments  (Input)
     filterParam struct
     scenarioParam struct
@@ -26,8 +26,13 @@ end
 switch filterParam.name
     case 'kf'
         filter = KalmanFilter(scenarioParam.initialPrior);
-        predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
+        if isempty(scenarioParam.inputs)
+            predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
+        else
+            predictionRoutine = @(currInput)filter.predictIdentity(scenarioParam.sysNoise.shift(currInput));
+        end
     case 'twn'
+        assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
         filter = ToroidalWNFilter();
         if isa(scenarioParam.initialPrior, 'HypertoroidalUniformDistribution')
             warning('Trying to initialize TWN filter with uniform prior. Setting to TWN with random mu very high uncertainty')
@@ -51,6 +56,7 @@ switch filterParam.name
         predictionRoutine = @()filter.predictNonlinear( ...
             @(x)scenarioParam.genNextStateWithoutNoise(x), sysNoiseForFilter);
     case {'iff', 'sqff', 'ffidResetOnPred', 'ffsqrtResetOnPred'}
+        assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
         if strfind(filterParam.name, 'iff')
             trans = 'identity';
         elseif strfind(filterParam.name, 'sqff')
@@ -90,6 +96,7 @@ switch filterParam.name
             predictionRoutine = @()filter.predictIdentity(sysNoiseFourier);
         end
     case 'htgf'
+        assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
         filter = HypertoroidalGridFilter(filterParam.parameter, scenarioParam.initialPrior.dim);
         filter.setState(HypertoroidalGridDistribution.fromDistribution( ...
             scenarioParam.initialPrior, filterParam.parameter * ones(1, scenarioParam.initialPrior.dim)));
@@ -99,16 +106,19 @@ switch filterParam.name
             error('Currently not supported');
         end
     case 'fig'
+        assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
         assert(scenarioParam.initialPrior.dim == 1);
         filter = FIGFilter(filterParam.parameter);
         filter.setState(FIGDistribution.fromDistribution(scenarioParam.initialPrior, filterParam.parameter));
         sysNoiseGrid = FIGDistribution.fromDistribution(scenarioParam.sysNoise, filterParam.parameter);
         predictionRoutine = @()filter.predictIdentity(sysNoiseGrid);
     case 'figResetOnPred'
+        assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
         filter = FIGFilter(filterParam.parameter);
         predictionRoutine = @()filter.setState(FIGDistribution.fromDistribution( ...
             CircularUniformDistribution(), filterParam.parameter));
     case {'ishf','sqshf'}
+        assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
         if strfind(filterParam.name, 'ishf')
             trans = 'identity';
         elseif strfind(filterParam.name, 'sqshf')
@@ -139,6 +149,7 @@ switch filterParam.name
         end
         switch scenarioParam.manifoldType
             case {'circle', 'hypertorus'}
+                assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
                 filter = HypertoroidalParticleFilter(noParticles, scenarioParam.initialPrior.dim);
                 filter.setState(scenarioParam.initialPrior);
 
@@ -148,6 +159,7 @@ switch filterParam.name
                     predictionRoutine = @()filter.predictNonlinear(@(x)x, scenarioParam.sysNoise, true);
                 end
             case {'hypersphere', 'hypersphereGeneral', 'hypersphereSymm'}
+                assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
                 filter = HypersphericalParticleFilter(noParticles, scenarioParam.initialPrior.dim);
                 filter.setState(scenarioParam.initialPrior);
 
@@ -157,24 +169,31 @@ switch filterParam.name
                     predictionRoutine = @()filter.predictNonlinear(@(x)x, scenarioParam.sysNoise, true);
                 end
             case 'hypercylinder'
+                assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
                 filter = HypercylindricalParticleFilter(noParticles, ...
                     scenarioParam.initialPrior.boundD, scenarioParam.initialPrior.linD);
                 filter.setState(SE2DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
                 predictionRoutine = @()filter.predictNonlinear( ...
                     scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
             case 'se2'
+                assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
                 filter = SE2ParticleFilter(noParticles);
                 filter.setState(SE2DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
                 predictionRoutine = @()filter.predictNonlinear( ...
                     scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
             case 'se3'
+                assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
                 filter = SE3ParticleFilter(noParticles);
                 filter.setState(SE3DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
                 predictionRoutine = @()filter.predictNonlinear( ...
                     scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
             case {'euclidean', 'Euclidean'}
                 filter = EuclideanParticleFilter(noParticles, scenarioParam.initialPrior.dim);
-                predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
+                if isempty(scenarioParam.inputs)
+                    predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
+                else
+                    predictionRoutine = @(currInput)filter.predictIdentity(scenarioParam.sysNoise.shift(currInput));
+                end
             otherwise
                 error('Manifold unsupported.');
         end
