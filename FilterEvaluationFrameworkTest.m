@@ -1,7 +1,7 @@
 classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
     % @author Florian Pfaff pfaff@kit.edu
     % @date 2016-2021
-    % V2.7
+    % V2.9
     methods (Test)
         function testCircularFilters(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
@@ -165,6 +165,36 @@ classdef FilterEvaluationFrameworkTest < matlab.unittest.TestCase
             filters = struct( ...
                 'name', {'hgf', 'hhgf', 'hgfSymm', 'pf'}, ...
                 'filterParams', {[5, 7], [5, 7], [6, 10], [31, 51]});
+            startEvaluation(scenarioName, filters, noRuns, saveFolder = tempFixture.Folder, initialSeed = 1);
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            paramTimeAndErrorPerFilter = plotResults();
+            testCase.verifyLessThan([paramTimeAndErrorPerFilter.meanErrorAllConfigs], 0.8*pi);
+        end
+        function testR2randomWalk(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            import matlab.unittest.fixtures.TemporaryFolderFixture
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            tempFixture = testCase.applyFixture(TemporaryFolderFixture);
+
+            noRuns = 10;
+            scenarioName = 'R2randomWalk';
+            filters = struct( ...
+                'name', {'kf', 'pf'}, 'filterParams', {NaN, [31, 51]});
+            startEvaluation(scenarioName, filters, noRuns, saveFolder = tempFixture.Folder, initialSeed = 1);
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            paramTimeAndErrorPerFilter = plotResults();
+            testCase.verifyLessThan([paramTimeAndErrorPerFilter.meanErrorAllConfigs], 0.8*pi);
+        end
+        function testR4randomWalk(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            import matlab.unittest.fixtures.TemporaryFolderFixture
+            testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
+            tempFixture = testCase.applyFixture(TemporaryFolderFixture);
+
+            noRuns = 10;
+            scenarioName = 'R4randomWalk';
+            filters = struct( ...
+                'name', {'kf', 'pf'}, 'filterParams', {NaN, [31, 51]});
             startEvaluation(scenarioName, filters, noRuns, saveFolder = tempFixture.Folder, initialSeed = 1);
             testCase.applyFixture(SuppressedWarningsFixture('PlotResults:FewRuns'));
             paramTimeAndErrorPerFilter = plotResults();

@@ -1,7 +1,7 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2022
-% V2.8
+% V2.9
 arguments  (Input)
     filterParam struct
     scenarioParam struct
@@ -24,6 +24,9 @@ else
     measNoiseForFilter = [];
 end
 switch filterParam.name
+    case 'kf'
+        filter = KalmanFilter(scenarioParam.initialPrior);
+        predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
     case 'twn'
         filter = ToroidalWNFilter();
         if isa(scenarioParam.initialPrior, 'HypertoroidalUniformDistribution')
@@ -169,6 +172,9 @@ switch filterParam.name
                 filter.setState(SE3DiracDistribution(scenarioParam.initialPrior.sample(noParticles)));
                 predictionRoutine = @()filter.predictNonlinear( ...
                     scenarioParam.genNextStateWithoutNoise, scenarioParam.sysNoise, scenarioParam.genNextStateWithoutNoiseIsVectorized);
+            case {'euclidean', 'Euclidean'}
+                filter = EuclideanParticleFilter(noParticles, scenarioParam.initialPrior.dim);
+                predictionRoutine = @()filter.predictIdentity(scenarioParam.sysNoise);
             otherwise
                 error('Manifold unsupported.');
         end

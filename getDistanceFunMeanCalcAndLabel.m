@@ -1,7 +1,7 @@
 function [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.7
+% V2.9
 arguments
     mode char
 end
@@ -64,6 +64,10 @@ switch mode
         distanceFunction = @(x1, x2)min(acos(dot(x1(1:4), x2(1:4))), acos(dot(x1(1:4), -x2(1:4)))); % With two arguments to calculate it over the entire array
         extractMean = @(filterState)filterState.hybridMean();
         errorLabel = 'Error in radian';
+    case {'euclidean', 'Euclidean'}
+        distanceFunction = @(x1, x2)vecnorm(x1-x2);
+        extractMean = @(filterState)filterState.mean();
+        errorLabel = 'Error in meters';
     otherwise
         error('Mode not recognized');
 end

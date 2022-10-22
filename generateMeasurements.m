@@ -2,7 +2,7 @@ function measurements = generateMeasurements(groundtruth, scenarioParam)
 % Generates measurements
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V1.0
+% V2.9
 if isfield(scenarioParam, 'measGenerator')
     if numel(scenarioParam.measGenerator) == 1 && scenarioParam.timesteps > 1 % If only one given, repeat in cell array
         measGenCell = repmat({scenarioParam.measGenerator}, 1, scenarioParam.timesteps);
@@ -28,10 +28,8 @@ else
             currDist.mu = groundtruth(:, t); % Currently only works for VMF
             measurements(:, ((t - 1) * scenarioParam.measPerStep + 1):(t * scenarioParam.measPerStep)) = currDist.sample(scenarioParam.measPerStep);
         end
-    else
-        error('Noise not supported');
+    elseif isa(scenarioParam.measNoise, 'GaussianDistribution')
+        measurements = groundtruth+scenarioParam.measNoise.sample(scenarioParam.timesteps * scenarioParam.measPerStep);
     end
 end
-
-
 end

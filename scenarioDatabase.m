@@ -1,7 +1,7 @@
 function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2021
-% V2.1
+% V2.9
 arguments
     scenario char
     scenarioCustomizationParams
@@ -268,6 +268,23 @@ switch scenario
         scenarioParam.useLikelihood = true;
         scenarioParam.likelihood = @(z, x)HypersphericalMixture( ...
             {VMFDistribution(z, scenarioParam.kappaMeas), VMFDistribution(-z, scenarioParam.kappaMeas)}, [0.5, 0.5]).pdf(x);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%% Euclidean scenarios %%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    case 'R2randomWalk'
+        scenarioParam.manifoldType = 'Euclidean';
+        scenarioParam.timesteps = 10;
+        scenarioParam.initialPrior = GaussianDistribution([0; 0], 0.5*eye(2));
+        scenarioParam.measNoise = GaussianDistribution([0; 0], 0.5*eye(2));
+        scenarioParam.sysNoise = GaussianDistribution([0; 0], 0.5*eye(2));
+        scenarioParam.genNextStateWithoutNoiseIsVectorized = true;
+    case 'R4randomWalk'
+        scenarioParam.manifoldType = 'Euclidean';
+        scenarioParam.timesteps = 10;
+        scenarioParam.initialPrior = GaussianDistribution(zeros(4,1), 0.5*eye(4));
+        scenarioParam.measNoise = GaussianDistribution(zeros(4,1), 0.5*eye(4));
+        scenarioParam.sysNoise = GaussianDistribution(zeros(4,1), 0.5*eye(4));
+        scenarioParam.genNextStateWithoutNoiseIsVectorized = true;
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%% SE2 scenarios %%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
