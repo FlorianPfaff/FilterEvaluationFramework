@@ -1,7 +1,7 @@
 function [results, groundtruths, scenarioParam] = combineMats(filenamesOrPath, checkForEqualScenariosThroughly, saveMat, defaultActionDuplicateScenario, defaultActionUnreadableFile)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.5
+% @date 2016-2023
+% V2.13
 arguments
     filenamesOrPath {mustBeA(filenamesOrPath, {'char', 'cell'}), mustBeNonempty}
     checkForEqualScenariosThroughly(1, 1) logical = false
@@ -12,7 +12,10 @@ arguments
     % Choose default for unredable file. "d" means delete, "s" skip
     defaultActionUnreadableFile (1,:) char {mustBeMember(defaultActionUnreadableFile,{'','d','s'})} = ''
 end
-warnStatus = warning('on');
+if ~isequal(warning(),struct('identifier','all','state','on'))
+    notAllWarningsShown = true;
+    disp('Not all warnings are enabled.')
+end
 % Needs to contain date, therefore 20
 if iscell(filenamesOrPath) || contains(filenamesOrPath, '20') % Multiple or single file given as name
     files = struct('name', filenamesOrPath);
@@ -125,5 +128,7 @@ end
 if multipleScenarios
     cd(currDir) % Go back to current directory
 end
-warning(warnStatus);
+if notAllWarningsShown
+    disp('Reminder: Not all warnings were enabled.')
+end
 end
