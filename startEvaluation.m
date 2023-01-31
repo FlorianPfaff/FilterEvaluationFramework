@@ -1,7 +1,7 @@
 function startEvaluation(scenario, filters, noRuns, opt)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.0
+% @date 2016-2023
+% V2.14
 arguments
     scenario char
     % Struct with filternames and number of parameters. See
@@ -24,11 +24,15 @@ arguments
     % This can make sense if you want to guarantee there is no overlap by
     % setting numbers manually.
     opt.consecutiveSeed (1,1) logical = false
+    % For real evaluations, warnings are turned off (except for the preload
+    % run that is not considered). For debugging or for test cases, it can
+    % be valuable to be able to control warnings manually.
+    opt.autoWarningOnOff (1, 1) logical = false % Useful for debugging
 end
 [saveFolder, plotEachStep, convertToPointEstimateDuringRuntime, extractAllPointEstimates, scenarioCustomizationParams, tolerateFailure, initialSeed] = ...
     deal(opt.saveFolder, opt.plotEachStep, opt.convertToPointEstimateDuringRuntime, ...
     opt.extractAllPointEstimates, opt.scenarioCustomizationParams, opt.tolerateFailure, opt.initialSeed);
-assert(isequal(unique({filters.name}),sort({filters.name})), 'One filter was chosen more than once. To use the filter with different configurations, pass an array of parameters instead.');
+assert(numel(unique({filters.name}))==numel({filters.name}), 'One filter was chosen more than once. To use the filter with different configurations, pass an array of parameters instead.');
 % Scenario: Name of scenario or entire parameterization
 % filters: struct of cellstring with names and params.
 if isstruct(scenario)
@@ -47,7 +51,9 @@ else
     scenarioParam.allSeeds = tmpStream.randi(intmax,[1,noRuns]);
 end
 % Generate all estimates by iterating over all filters and configurations.
-[results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure);
+[results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, ...
+    filters, noRuns, convertToPointEstimateDuringRuntime,...
+    extractAllPointEstimates, tolerateFailure, opt.autoWarningOnOff);
 
 % Save results
 dateAndTime = datetime;

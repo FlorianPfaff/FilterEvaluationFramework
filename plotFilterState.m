@@ -1,4 +1,7 @@
 function plotFilterState(filter, groundtruth, measurements, timeIndex, measIndex)
+% @author Florian Pfaff pfaff@kit.edu
+% @date 2016-2021
+% V2.14
 arguments
     filter(1, 1) AbstractFilter
     groundtruth(:, :) double
@@ -40,8 +43,8 @@ elseif isa(filter, 'AbstractHypersphericalFilter') || isa(filter.getEstimate(), 
     scatter3(mu(1), mu(2), mu(3), 100, [1, 1, 0], 'filled');
     drawnow
 elseif isa(filter, 'AbstractSE2Filter') || isa(filter.getEstimate(), 'AbstractSE2Distribution')
-    if isa(filter, 'SE2InvariantUKF')
-        error('Plotting state not supported for IUKF');
+    if isa(filter, 'SE2UKFM')
+        error('Plotting state not supported for UFKM');
     end
     if measIndex == 0
         figNo = 765;
