@@ -1,7 +1,7 @@
-function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure)
+function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure, autoWarningOnOff)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.3
+% @date 2016-2023
+% V2.13
 arguments
     scenarioParam struct
     filters struct
@@ -9,9 +9,10 @@ arguments
     convertToPointEstimateDuringRuntime(1, 1) logical = false
     extractAllPointEstimates(1, 1) logical = false
     tolerateFailure(1, 1) logical = false
+    autoWarningOnOff (1, 1) logical = true
 end
 if extractAllPointEstimates
-    warning('Extracting all point estimates can have a massive impact on the run time. Use this for debugging only')
+    warning('FilterEvaluationFramework:SlowdownExtractEstimates', 'Extracting all point estimates can have a massive impact on the run time. Use this for debugging only')
 end
 
 nConfigs = sum(cellfun(@numel, {filters.filterParams}));
@@ -53,7 +54,7 @@ for filterNo = 1:numel(filters)
         precalculatedParams = precalculateParams(scenarioParam, filterParam);
         % Do a run before to prevent variation in run times
         fprintf('filter %i (%s) config %i (%i) doing dry run\n', filterNo, filters(filterNo).name, config, filters(filterNo).filterParams(config));
-        warning on % Allow warnings in dry run to see if anything may be wrong.
+        if autoWarningOnOff, warning('on'), end % Allow warnings in dry run to see if anything may be wrong.
         % Use last scenario to prevent gaining an advantage by having the same inputs in the next run
         try
             timeForPreload = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{1, end}, measurements{1, end}, precalculatedParams);
@@ -70,7 +71,7 @@ for filterNo = 1:numel(filters)
         else, plotEvery = 1;
         end
 
-        warning off
+        if autoWarningOnOff, warning('off'), end
         for r = 1:noRuns
             if mod(r-1, plotEvery) == 0
                 fprintf('filter %i (%s) config %i (%i) run %i\n', filterNo, filters(filterNo).name, config, filters(filterNo).filterParams(config), r);
@@ -95,10 +96,10 @@ for filterNo = 1:numel(filters)
                 if ~tolerateFailure
                     rethrow(err);
                 end
-                warning on
+                if autoWarningOnOff, warning('on'), end
                 runFailed(currConfigIndex, r) = true;
                 warning('filter %i config %i run %i FAILED: %s\n', filterNo, config, r, err.message);
-                warning off
+                if autoWarningOnOff, warning('off'), end
             end
             if mod(r-1, plotEvery) == 0
                 fprintf('Time taken for run %d: %5.5G\n', r, t(currConfigIndex, r))
