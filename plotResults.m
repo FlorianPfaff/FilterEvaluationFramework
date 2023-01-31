@@ -1,7 +1,7 @@
 function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds, linBoundedErrorMode)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.9
+% @date 2016-2023
+% V2.15
 arguments (Input)
     filenames {mustBeA(filenames, {'cell', 'char'})} = ''
     plotLog (2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
@@ -13,8 +13,13 @@ end
 arguments (Output)
     paramTimeAndErrorPerFilter struct
 end
+if ~isequal(warning(),struct('identifier','all','state','on'))
+    notAllWarningsShown = true;
+    disp('Not all warnings are enabled.')
+else
+    notAllWarningsShown = false;
+end
 plotLog = false(2, 3) | plotLog; % Use implicit expansion to pad it
-warning on
 meanCalculationSymm = 'Bingham'; % For hemispherical scenarios. Options: meanShift, Bingham, meanDiection
 plotRandomFilter = true;
 omitSlow = false;
@@ -65,11 +70,12 @@ else
 end
 % If mode hypersphereSymm, then a suitable filter should have been used
 assert(~(strcmp(mode, 'hypersphereSymm') && ~any(contains({results.filterName}, {'symm', 'hhgf', 'bingham'}, 'IgnoreCase', true))));
-% Clearing the figures does not change resizing or shifting, which we may often like to preserve
-allFigs = findall(groot, 'Type', 'figure');
-if ~isempty(allFigs)
-    figsToClear = intersect([allFigs.Number], [1, 2, 3, 11]);
-    for currFig = figsToClear, clf(currFig), end
+% By clearing the figures instead of closing them, we can maintain position and size of the plots, which we may often like to preserve
+figHandles = findobj('Type', 'figure');
+if ~isempty(figHandles)
+    for figNo = intersect([figHandles.Number], [1, 2, 3]) % Clear figures 1 to 3 (if they exist)
+        clf(figNo, 'reset');
+    end
 end
 
 fprintf('Using mode %s\n', [mode,linBoundedErrorMode]);
@@ -87,11 +93,11 @@ if ~isfield(results, 'lastFilterStates') && ~isfield(results, 'lastEstimates')
 elseif ~isfield(results, 'lastFilterStates')
     % If no filter states are there, overwrite extractMean to just give out
     % the last estimate
-    warning('Filter states not found. Use lastEstimates generated during run time');
+    warning('FilterEvaluationFramework:FilterStatesNotFoundForPlotting', 'Filter states not found. Use lastEstimates generated during run time');
     extractMean = 'useStored';
 end
 if isfield(results, 'allEstimates')
-    error('All filter states were saved. It is highly likely that this negatively impacted the run times. Comment out this line if you are sure you want to proceed.');
+    warning('All filter states were saved. It is highly likely that this negatively impacted the run times.');
 end
 allDeviationsLastMat = determineAllDeviations(results, extractMean, distanceFunction, meanCalculationSymm, groundtruths);
 assert(all([allDeviationsLastMat{:}]>=0,[1,2]));
@@ -116,26 +122,23 @@ if size(groundtruths{1}, 3) > 1
     end
 end
 
-%%
-figHandles = findobj('Type', 'figure');
-if ~isempty(figHandles)
-    for figNo = intersect([figHandles.Number], [1, 2, 3]) % Clear figures 1 to 3 (if they exist)
-        clf(figNo, 'reset');
-    end
-end
 % To sort according to the desired order. Flip iff and sqff to
 % ensure the dashed line for iff is not overdrawn by the solid line
 % for sqff
-allNames = {'grid', 'discrete', 'sqff', 'sqshf', 'iff', 'ishf', 'htgf', 'sgf', 'hgf', 'hhgf', ...
-    'hgfSymm', 's3f', 'pf', 'htpf', 'kf', 'kf-maha', 'vm', 'bingham', 'wn', 'vmf', 'twn', 'dummy', ...
-    'random', 'se2bf', 'se2iukf', 'fig', 'figResetOnPred'};
-filterNames = allNames(ismember(allNames, {results.filterName}));
+supportedFiltersShortNames = {'se2ukfm', 'se2bf', 's3f', 'grid', 'iff', 'sqff', 'pf', 'htpf', 'vmf', 'bingham', 'wn', 'vm', 'twn', ...
+    'kf', 'ishf', 'sqshf', 'htgf', 'sgf', 'hgf', 'hgfSymm', 'hhgf', 'randomTorus', 'randomSphere', 'fig', 'figResetOnPred'};
+supportedFiltersLongNames = {'Unscented KF for Manifolds', '(Progressive) SE(2) Bingham filter', 'State space subdivision filter', 'Grid filter', 'Fourier identity filter', 'Fourier square root filter', 'Particle filter', 'Particle filter', ...
+    'Von Mises--Fisher filter', 'Bingham filter', 'Wrapped normal filter', 'Von Mises filter', 'Bivariate WN filter', 'Kalman filter', ...
+    'Spherical hamonics identity filter', 'Spherical hamonics square root filter', 'Hypertoroidal grid filter', ...
+    'Spherical grid filter', 'Hyperspherical grid filter', ...
+    'Symmetric hyperspherical grid filter', 'Hyperhemispherical grid filter', 'Random filter', 'Random filter',...
+    'Fourier-interpreted grid filter', 'FIG-Filter with resetting on prediction'};
+
+filterNames = supportedFiltersShortNames(ismember(supportedFiltersShortNames, {results.filterName}));
 if numel(filterNames) < numel(unique({results.filterName}))
     warning('One of the filters is unknown');
 end
 paramTimeAndErrorPerFilter = struct('filterName', filterNames, 'allParams', [], 'meanTimesAllConfigs', [], 'meanErrorAllConfigs', []);
-% Iteriere über die Namen und nimm dann alle Einträge, bei denen der
-% Filtername passt.
 handlesErrorOverParam = [];
 handlesTimeOverParam = [];
 handlesErrorOverTime = [];
@@ -153,6 +156,7 @@ else
 end
 maxParam = max([results.filterParams]);
 for name = filterNames
+	% Iterate over all possible names and plot the lines for those that were evaluated
     nameStr = [name{:}];
     switch nameStr
         case {'iff', 'ishf'}
@@ -290,13 +294,7 @@ if (any(strcmp(filterNames, 'vm')) && any(strcmp(filterNames, 'kf')))
     end
 end
 
-filternames = replace(filterNames, {'se2iukf', 'se2bf', 's3f', 'grid', 'iff', 'sqff', 'pf', 'htpf', 'vmf', 'bingham', 'vm', 'twn', ...
-    'kf', 'ishf', 'sqshf', 'htgf', 'sgf', 'hgf', 'hgfSymm', 'hhgf', 'randomTorus', 'randomSphere'}, ...
-    {'Invariant unscented Kalman filter', '(Progressive) SE(2) Bingham filter', 'State space subdivision filter', 'Grid filter', 'Fourier identity filter', 'Fourier square root filter', 'Particle filter', 'Particle filter', ...
-    'Von Mises--Fisher filter', 'Bingham filter', 'Von Mises filter', 'Bivariate WN filter', 'Kalman filter', ...
-    'Spherical hamonics identity filter', 'Spherical hamonics square root filter', 'Hypertoroidal grid filter', ...
-    'Spherical grid filter', 'Hyperspherical grid filter', ...
-    'Symmetric hyperspherical grid filter', 'Hyperhemispherical grid filter', 'Random filter', 'Random filter'});
+filterFullNames = replace(filterNames, supportedFiltersShortNames, supportedFiltersLongNames);
 
 figure(1);
 ax(1) = gca;
@@ -307,7 +305,7 @@ elseif isnan(minParam)||isnan(maxParam)
 else
     xlim([minParam, maxParam]);
 end
-legend(handlesErrorOverParam, filternames);
+legend(handlesErrorOverParam, filterFullNames);
 xlabel('Number of grid points/particles/coefficients');
 ylabel(errorLabel);
 title('Error over number of parameters');
@@ -320,7 +318,7 @@ elseif isnan(minParam)||isnan(maxParam)
 else
     xlim([minParam, maxParam]);
 end
-legend(handlesTimeOverParam(~isnan(handlesTimeOverParam)), filternames(~isnan(handlesTimeOverParam)), 'Location', 'Northwest');
+legend(handlesTimeOverParam(~isnan(handlesTimeOverParam)), filterFullNames(~isnan(handlesTimeOverParam)), 'Location', 'Northwest');
 xlabel('Number of grid points/particles/coefficients');
 ylabel(timeLabel);
 title('Time over number of parameters')
@@ -331,7 +329,7 @@ if min(allMeanTimes) == max(allMeanTimes)
 else
     xlim(minmax(allMeanTimes(~strcmp({results.filterName}, 'twn') & ~strcmp({results.filterName}, 'randomSphere') & ~strcmp({results.filterName}, 'randomTorus')))*timesFactor);
 end
-legend(handlesErrorOverTime(~isnan(handlesErrorOverTime)), filternames(~isnan(handlesErrorOverTime)));
+legend(handlesErrorOverTime(~isnan(handlesErrorOverTime)), filterFullNames(~isnan(handlesErrorOverTime)));
 xlabel(timeLabel);
 ylabel(errorLabel);
 title('Error over time')
@@ -343,5 +341,7 @@ set([ax(plotLog(2, :)).YAxis], 'Scale', 'log')
 for currAx = ax(plotLog(2, :))
     currAx.YLabel.String = [currAx.YLabel.String, ' (log scale)'];
 end
-
+if notAllWarningsShown
+    disp('-----------Reminder: Not all warnings were enabled.-----------')
+end
 end
