@@ -1,7 +1,7 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2022
-% V2.10
+% @date 2016-2023
+% V2.16
 arguments  (Input)
     filterParam struct
     scenarioParam struct
@@ -35,7 +35,7 @@ switch filterParam.name
         assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
         filter = ToroidalWNFilter();
         if isa(scenarioParam.initialPrior, 'HypertoroidalUniformDistribution')
-            warning('Trying to initialize TWN filter with uniform prior. Setting to TWN with random mu very high uncertainty')
+            warning('FilterEvaluationFramework:TWNUniform', 'Trying to initialize TWN filter with uniform prior. Setting to TWN with random mu very high uncertainty')
             mu = scenarioParam.initialPrior.sample(1);
             initialPrior = ToroidalWNDistribution(mu, 100*eye(filter.dim));
         else

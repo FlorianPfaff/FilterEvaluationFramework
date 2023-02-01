@@ -1,7 +1,7 @@
 function scenarioParam = checkAndFixParams(scenarioParam)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2022
-% V2.10
+% V2.18
 arguments (Input)
     scenarioParam (1,1) struct
 end
@@ -38,7 +38,8 @@ if isfield(scenarioParam,'genNextStateWithNoise')&&~isfield(scenarioParam,'genNe
         scenarioParam.genNextStateWithNoise(scenarioParam.initialPrior.sample(11));
         scenarioParam.genNextStateWithNoiseIsVectorized = true;
     catch
-        warning('Apparently genNextStateWithNoise is not vectorized. This may negatively impact the performance of the particle filter.')
+        warning('FilterEvaluationFramework:genNextStateWithNoiseNotVectorizedForPF',...
+            'Apparently, genNextStateWithNoise is not vectorized. This may negatively impact the performance of the particle filter.')
         scenarioParam.genNextStateWithNoiseIsVectorized = false;
     end
 end
@@ -48,7 +49,8 @@ if isfield(scenarioParam,'genNextStateWithoutNoise')&&~isfield(scenarioParam,'ge
         scenarioParam.genNextStateWithoutNoise(scenarioParam.initialPrior.sample(11));
         scenarioParam.genNextStateWithoutNoiseIsVectorized = true;
     catch
-        warning('Apparently genNextStateWithoutNoise is not vectorized. This may negatively impact the performance of the particle filter.')
+        warning('FilterEvaluationFramework:genNextStateWithoutNoiseNotVectorizedForPF',...
+            'Apparently, genNextStateWithoutNoise is not vectorized. This may negatively impact the performance of the particle filter.')
         scenarioParam.genNextStateWithoutNoiseIsVectorized = false;
     end
 end
