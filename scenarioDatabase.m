@@ -50,7 +50,7 @@ switch scenario
         scenarioParam.measNoise = ToroidalMixture({ToroidalWNDistribution([.5; .5], [scenarioParam.si1Meas^2, scenarioParam.rhoMeas * scenarioParam.si1Meas * scenarioParam.si2Meas; scenarioParam.rhoMeas * scenarioParam.si1Meas * scenarioParam.si2Meas, scenarioParam.si2Meas^2]), ...
             ToroidalWNDistribution([-.5; -.5], [scenarioParam.si1Meas^2, scenarioParam.rhoMeas * scenarioParam.si1Meas * scenarioParam.si2Meas; scenarioParam.rhoMeas * scenarioParam.si1Meas * scenarioParam.si2Meas, scenarioParam.si2Meas^2])}, ...
             [0.5, 0.5]);
-    case 'T2-4twnlooksunimodal'
+    case 'T2twnMixtureLooksUnimodal'
         scenarioParam.manifoldType = 'hypertorus';
         scenarioParam.timesteps = 10;
         [scenarioParam.si1Sys, scenarioParam.si2Sys] = deal(2);
