@@ -1,7 +1,7 @@
 function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure, autoWarningOnOff)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.13
+% V2.17
 arguments
     scenarioParam struct
     filters struct
@@ -41,6 +41,9 @@ for r = 1:noRuns
     % x0 is saved as well
     groundtruths{1, r} = generateGroundtruth(x0, scenarioParam);
     measurements{1, r} = generateMeasurements(groundtruths{1, r}, scenarioParam);
+    assert(isequal(size(unique(reshape(measurements{1, r}, size(measurements{1, r},1), [])', 'rows')),...
+        size(reshape(measurements{1, r}, size(measurements{1, r},1), [])')),...
+        'Two identical measurements were generated. This should not happen, check your measurement generating function.');
 end
 rng('shuffle'); % We set the seed up there, so shuffle rng now to prevent deterministic behavior of the filters
 for filterNo = 1:numel(filters)
