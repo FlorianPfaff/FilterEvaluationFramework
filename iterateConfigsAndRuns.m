@@ -1,14 +1,14 @@
 function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure, autoWarningOnOff)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.17
+% V2.20
 arguments
     scenarioParam struct
     filters struct
-    noRuns(1, 1) double {mustBeInteger, mustBePositive}
-    convertToPointEstimateDuringRuntime(1, 1) logical = false
-    extractAllPointEstimates(1, 1) logical = false
-    tolerateFailure(1, 1) logical = false
+    noRuns (1, 1) double {mustBeInteger, mustBePositive}
+    convertToPointEstimateDuringRuntime (1, 1) logical = false
+    extractAllPointEstimates (1, 1) logical = false
+    tolerateFailure (1, 1) logical = false
     autoWarningOnOff (1, 1) logical = true
 end
 if extractAllPointEstimates

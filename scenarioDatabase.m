@@ -1,7 +1,7 @@
 function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2022
-% V2.10
+% @date 2016-2023
+% V2.20
 arguments
     scenario char
     scenarioCustomizationParams
@@ -226,7 +226,7 @@ switch scenario
         %%%%%%%Symmetric hyperspherical / Hyperhemispherical scenarios%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     case 'S2SymmNlerp'
-        scenarioParam.manifoldType = 'hypersphereSymm';
+        scenarioParam.manifoldType = 'hypersphereSymmetric';
         scenarioParam.timesteps = 10;
         scenarioParam.measPerStep = 1;
         scenarioParam.u = [0; -1; 0];
@@ -241,7 +241,7 @@ switch scenario
         scenarioParam.useTransition = true;
         scenarioParam.fTrans = @(xkk, xk)fTransNlerpWatson(xkk, xk, scenarioParam.u, scenarioParam.alpha, scenarioParam.kappaSysNoise);
     case 'S2SymmMixture'
-        scenarioParam.manifoldType = 'hypersphereSymm';
+        scenarioParam.manifoldType = 'hypersphereSymmetric';
         scenarioParam.timesteps = 10;
         scenarioParam.measPerStep = 1;
 
@@ -298,7 +298,7 @@ switch scenario
         %%%%%%%%%%%%%%%%%%%%%%%%%% SE2 scenarios %%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     case 'se2randomDirectedWalk'
-        scenarioParam.timesteps = scenarioCustomizationParams;
+        scenarioParam.timesteps = 10;
         scenarioParam.manifoldType = 'se2';
         scenarioParam.measPerStep = 1;
         % This normally does not need to accept vector-valued inputs, we do so for
@@ -310,10 +310,10 @@ switch scenario
         scenarioParam.initialPrior = SE2CartProdStackedDistribution( ...
             {scenarioParam.initialPriorPeriodic; scenarioParam.initialPriorLinear});
 
-        scenarioParam.vmSysNoise = VMDistribution(0, 10);
-        scenarioParam.gaussianSysNoise = GaussianDistribution([0; 0], eye(2));
+        scenarioParam.sysNoisePeriodic = VMDistribution(0, 10);
+        scenarioParam.sysNoiseLinear = GaussianDistribution([0; 0], eye(2));
         scenarioParam.sysNoise = SE2CartProdStackedDistribution( ...
-            {scenarioParam.vmSysNoise, scenarioParam.gaussianSysNoise});
+            {scenarioParam.sysNoisePeriodic, scenarioParam.sysNoiseLinear});
 
         scenarioParam.gaussianMeasNoise = GaussianDistribution([0; 0], 0.5*eye(2));
 
@@ -338,10 +338,10 @@ switch scenario
         scenarioParam.initialPrior = SE3CartProdStackedDistribution( ...
             {scenarioParam.initialPriorPeriodic; scenarioParam.initialPriorLinear});
         
-        scenarioParam.watsonSysNoise = HyperhemisphericalWatsonDistribution([0;0;0;1], 1);
-        scenarioParam.gaussianSysNoise = GaussianDistribution([0; 0; 0], eye(3));
+        scenarioParam.sysNoisePeriodic = HyperhemisphericalWatsonDistribution([0;0;0;1], 1);
+        scenarioParam.sysNoiseLinear = GaussianDistribution([0; 0; 0], eye(3));
         scenarioParam.sysNoise = SE3CartProdStackedDistribution( ...
-            {scenarioParam.watsonSysNoise, scenarioParam.gaussianSysNoise});
+            {scenarioParam.sysNoisePeriodic, scenarioParam.sysNoiseLinear});
         scenarioParam.gaussianMeasNoise = GaussianDistribution([0; 0; 0], eye(3));
         scenarioParam.stepSize = 1;
         scenarioParam.genNextStateWithoutNoise = ...

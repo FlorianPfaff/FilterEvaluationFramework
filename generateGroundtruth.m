@@ -2,8 +2,8 @@ function groundtruth = generateGroundtruth(x0, scenarioParam)
 % x0 is startingpoint. SysNoiseOrGenNext is either the system noise or
 % a function generating the next point (including the noise!).
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2022
-% V2.10
+% @date 2016-2023
+% V2.20
 arguments (Input)
     x0 (:,1) double
     scenarioParam struct
@@ -49,7 +49,6 @@ elseif isfield(scenarioParam, 'sysNoise') % If sysnoise given, shift by predicti
         end
     end
 else
-    error('Cannot generate groundtruth');
+    error('Cannot generate groundtruth.');
 end
-
 end

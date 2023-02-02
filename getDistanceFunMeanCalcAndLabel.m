@@ -1,7 +1,7 @@
 function [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.9
+% @date 2016-2023
+% V2.20
 arguments
     mode char
 end
@@ -44,7 +44,7 @@ switch mode
         distanceFunction = @(x1, x2)acos(dot(x1, x2));
         extractMean = @(filterState)filterState.meanDirection();
         errorLabel = 'Error (orthodromic distance) in radian';
-    case 'hypersphereSymm'
+    case 'hypersphereSymmetric'
         distanceFunction = @(x1, x2)min(acos(dot(x1, x2)), acos(dot(x1, -x2))); % With two arguments to calculate it over the entire array
         extractMean = 'custom';
         errorLabel = 'Angular error in radian';

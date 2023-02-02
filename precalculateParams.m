@@ -1,7 +1,7 @@
 function precalculatedParams = precalculateParams(scenarioParam, filterParam)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.1
+% @date 2016-2023
+% V2.20
 switch filterParam.name
     case 'twn'
         if ~scenarioParam.useLikelihood && ~isa(scenarioParam.measNoise, 'ToroidalWNDistribution')
@@ -70,13 +70,13 @@ switch filterParam.name
                     FIGDistribution.fromDistribution(scenarioParam.initialPriorPeriodic, filterParam.parameter), ...
                     repmat(scenarioParam.initialPriorLinear, [filterParam.parameter, 1]));
                 precalculatedParams.condPeriodic = ...
-                    TdCondTdGridDistribution.fromFunction(@(xkk, xk)scenarioParam.vmSysNoise.pdf(xkk - xk), filterParam.parameter, false, 'CartesianProd', 2);
+                    TdCondTdGridDistribution.fromFunction(@(xkk, xk)scenarioParam.sysNoisePeriodic.pdf(xkk - xk), filterParam.parameter, false, 'CartesianProd', 2);
             case 'se3'
                 precalculatedParams.priorForFilter = SE3StateSpaceSubdivisionGaussianDistribution( ...
                     HyperhemisphericalGridDistribution.fromDistribution(scenarioParam.initialPriorPeriodic, filterParam.parameter), ...
                     repmat(scenarioParam.initialPriorLinear, [filterParam.parameter, 1]));
                 precalculatedParams.condPeriodic = ...
-                    SdHalfCondSdHalfGridDistribution.fromFunction(@(xkk, xk)cell2mat(arrayfun(@(i){scenarioParam.watsonSysNoise.shift(xk(:,i)).pdf(xkk)},1:size(xk,2))), filterParam.parameter, true, 'eq_point_set_symm', 8);
+                    SdHalfCondSdHalfGridDistribution.fromFunction(@(xkk, xk)cell2mat(arrayfun(@(i){scenarioParam.sysNoisePeriodic.shift(xk(:,i)).pdf(xkk)},1:size(xk,2))), filterParam.parameter, true, 'eq_point_set_symm', 8);
             otherwise
                 error('Manifold type not supported.')
         end

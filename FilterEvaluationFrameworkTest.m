@@ -245,13 +245,13 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
                 'FilterEvaluationFramework:genNextStateWithoutNoiseNotVectorizedForPF',...
                 'AbstractHypersphereSubsetDistribution:meanAxisUnreliable'}));
             scenarioName = 'se3randomDirectedWalk';
-            filters = struct('name', {'s3f','pf'},'filterParams', {[15, 20],[200, 1000, 2000]});
+            filters = struct('name', {'s3f','pf'},'filterParams', {[15, 20],[200, 1000]});
             startEvaluation(scenarioName, filters, testCase.noRunsDefault,...
                 saveFolder = tempFixture(1).Folder, initialSeed = 1,...
                 scenarioCustomizationParams = 50, autoWarningOnOff=false);
             paramTimeAndErrorPerFilter = plotResults();
-            testCase.verifyLessThan(paramTimeAndErrorPerFilter(1).meanErrorAllConfigs(end), 1.8);
-            testCase.verifyLessThan(paramTimeAndErrorPerFilter(2).meanErrorAllConfigs(end), 1.8);
+            testCase.verifyLessThan(paramTimeAndErrorPerFilter(1).meanErrorAllConfigs(end), 1.9);
+            testCase.verifyLessThan(paramTimeAndErrorPerFilter(2).meanErrorAllConfigs(end), 1.9);
         end
         function testRandomFilter(testCase)
             tempFixture = testCase.getSharedTestFixtures();

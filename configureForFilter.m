@@ -1,7 +1,7 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.16
+% V2.20
 arguments  (Input)
     filterParam struct
     scenarioParam struct
@@ -9,7 +9,7 @@ arguments  (Input)
 end
 arguments (Output)
     filter AbstractFilter
-    predictionRoutine function_handle
+    predictionRoutine (1,1) function_handle
     likelihoodForFilter
     measNoiseForFilter 
 end
@@ -158,7 +158,7 @@ switch filterParam.name
                 elseif isfield(scenarioParam, 'sysNoise')
                     predictionRoutine = @()filter.predictNonlinear(@(x)x, scenarioParam.sysNoise, true);
                 end
-            case {'hypersphere', 'hypersphereGeneral', 'hypersphereSymm'}
+            case {'hypersphere', 'hypersphereGeneral', 'hypersphereSymmetric'}
                 assert(isempty(scenarioParam.inputs), 'Inputs currently not supported for the current setting.')
                 filter = HypersphericalParticleFilter(noParticles, scenarioParam.initialPrior.dim);
                 filter.setState(scenarioParam.initialPrior);
@@ -241,11 +241,13 @@ switch filterParam.name
                 error('Manifold not supported')
         end
         predictionRoutine = @()filter.predictLinear( ...
-            precalculatedParams.condPeriodic, scenarioParam.gaussianSysNoise.C, [], inputs);
+            precalculatedParams.condPeriodic, scenarioParam.sysNoiseLinear.C, [], inputs);
     case 'se2bf'
         filter = SE2BinghamFilter();
         filter.setState(precalculatedParams.priorForFilter);
-        likelihoodForFilter = @(z, x)scenarioParam.likelihood(z, ...
+        assert(all(cellfun(@(l)isequal(l,scenarioParam.likelihood{1}),scenarioParam.likelihood)),...
+            'Different likelihood are currently unsupported for the SE2BinghamFilter.');
+        likelihoodForFilter = @(z, x)scenarioParam.likelihood{1}(z, ...
             AbstractSE2Distribution.dualQuaternionToAnglePos(x));
         predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithoutNoise, precalculatedParams.sysNoiseForFilter);
     case 'se2ukfm'
@@ -256,7 +258,15 @@ switch filterParam.name
         % The sys noise should actually given in longitudinal and
         % transveral coordinates, but since our system noise is
         % direction invariant, it works without changing anything
-        sysCov = blkdiag(scenarioParam.vmSysNoise.toWN().sigma^2, scenarioParam.gaussianSysNoise.C);
+        switch class(scenarioParam.sysNoisePeriodic)
+            case 'VMDistribution'
+                sigmaSysNoise = scenarioParam.sysNoisePeriodic.toWN.sigma;
+            case 'WNDistribution'
+                sigmaSysNoise = scenarioParam.sysNoisePeriodic.sigma;
+            otherwise
+                error('System noise not supported for UKF-M for SE(2)')
+        end
+        sysCov = blkdiag(sigmaSysNoise^2, scenarioParam.sysNoiseLinear.C);
         % This is scenario-dependant, but for now it's okay to hardcode
         % it.
         predictionRoutine = @()filter.predictNonlinear(@localization_f, sysCov, struct('gyro', 0, 'v', [1; 0]));
@@ -274,9 +284,9 @@ end
 if scenarioParam.useLikelihood && isfield(scenarioParam, 'likelihood') && ~iscell(likelihoodForFilter)
     likelihoodForFilter = repmat({likelihoodForFilter}, 1, scenarioParam.timesteps);
 elseif numel(likelihoodForFilter)  == scenarioParam.timesteps
-    likelihoodForFilter = reshape(repmat(likelihoodForFilter(:)',[scenarioParam.measPerStep,1]),1,[]);
-elseif numel(likelihoodForFilter)  == scenarioParam.measPerStep
-    likelihoodForFilter = repmat(likelihoodForFilter(:)',[1,scenarioParam.timesteps]);
+    likelihoodForFilter = reshape(repmat(likelihoodForFilter(:)',[sum(scenarioParam.nMeasAtIndividualTimeStep),1]),1,[]);
+elseif numel(likelihoodForFilter)  == sum(scenarioParam.nMeasAtIndividualTimeStep)
+    likelihoodForFilter = repmat(likelihoodForFilter(:)',[1,sum(scenarioParam.nMeasAtIndividualTimeStep)]);
 elseif isempty(likelihoodForFilter) % Do nothing
 else
     error('Likelihood is in unknown format');
