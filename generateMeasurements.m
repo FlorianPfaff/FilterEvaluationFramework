@@ -2,19 +2,20 @@ function measurements = generateMeasurements(groundtruth, scenarioParam)
 % Generates measurements
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.20
+% V3.0
 arguments (Input)
     groundtruth double
     scenarioParam (1,1) struct
 end
 arguments (Output)
-    measurements (:,:) double
+    measurements (1,:) cell
 end
-nMeasUpUntilTimeStep = [0, cumsum(scenarioParam.nMeasAtIndividualTimeStep)]; 
+measurements = cell(1,scenarioParam.timesteps);
 if isfield(scenarioParam, 'measGenerator')
     % Measurement generator can differ for different time steps and
     % measurements in one time step. If fewer measurement generators are
     % given repeat them.
+    nMeasUpUntilTimeStep = [0, cumsum(scenarioParam.nMeasAtIndividualTimeStep)]; 
     if numel(scenarioParam.measGenerator) == 1 % If only one given, repeat in cell array
         measGenCell = repmat({scenarioParam.measGenerator}, 1, nMeasUpUntilTimeStep(end));
     elseif numel(scenarioParam.measGenerator) == scenarioParam.timesteps
@@ -36,28 +37,31 @@ if isfield(scenarioParam, 'measGenerator')
         error('Size of scenarioParam.measGenerator is incompatible with the number of time steps or measurements per time step.');
     end
     measEqOutputSize = numel(measGenCell{1}(groundtruth(:, 1)));
-    measurements = NaN(measEqOutputSize, nMeasUpUntilTimeStep(end));
+    measurements = cell(1, scenarioParam.timesteps);
     for t = 1:scenarioParam.timesteps % Apply measEq in every time step
+        measurements{t} = NaN(measEqOutputSize, scenarioParam.nMeasAtIndividualTimeStep(t));
         for m = 1:scenarioParam.nMeasAtIndividualTimeStep(t)
-            measurements(:, nMeasUpUntilTimeStep(t)+m) = measGenCell{nMeasUpUntilTimeStep(t)+m}(groundtruth(:, t));
+            measurements{t}(:,m) = measGenCell{nMeasUpUntilTimeStep(t)+m}(groundtruth(:, t));
         end
     end
 else
-    if isa(scenarioParam.measNoise, 'AbstractHypertoroidalDistribution')
-        measurements = mod(groundtruth+scenarioParam.measNoise.sample(sum(scenarioParam.nMeasAtIndividualTimeStep)), 2*pi);
-    elseif isa(scenarioParam.measNoise, 'VMFDistribution') || isa(scenarioParam.measNoise, 'WatsonDistribution')
-        assert(isequal(scenarioParam.measNoise.mu, [0; 0; 1]));
-        measurements = NaN(size(groundtruth, 1), sum(scenarioParam.nMeasAtIndividualTimeStep));
-        currDist = scenarioParam.measNoise;
-        nMeasUpUntilTimeStep = [0, cumsum(scenarioParam.nMeasAtIndividualTimeStep)];
-        for t = 1:scenarioParam.timesteps % Apply measEq in every time step
-            currDist.mu = groundtruth(:, t); % Currently only works for VMF
-            measurements(:, nMeasUpUntilTimeStep(t)+1:nMeasUpUntilTimeStep(t+1))...
-                = currDist.sample(scenarioParam.nMeasAtIndividualTimeStep(t));
+    for t = 1:scenarioParam.timesteps
+        % When no measurement generator is given, only additive noise is
+        % assumed, i.e., the dimension of the measurements is equal 
+        if isa(scenarioParam.measNoise, 'AbstractHypertoroidalDistribution')
+            measurements{t} = mod(repmat(groundtruth(:,t), [1, scenarioParam.nMeasAtIndividualTimeStep(t)])...
+                + scenarioParam.measNoise.sample(scenarioParam.nMeasAtIndividualTimeStep(t)), 2*pi);
+        elseif isa(scenarioParam.measNoise, 'VMFDistribution') || isa(scenarioParam.measNoise, 'WatsonDistribution')
+            assert(isequal(scenarioParam.measNoise.mu, [0; 0; 1]));
+            measurements{t} = NaN([size(groundtruth(1,:),1), scenarioParam.nMeasAtIndividualTimeStep(t)]);
+            currDist = scenarioParam.measNoise;
+            currDist.mu = groundtruth(:, t);
+            measurements{t} = currDist.sample(scenarioParam.nMeasAtIndividualTimeStep(t));
+        elseif isa(scenarioParam.measNoise, 'GaussianDistribution')
+            measurements{t} = repmat(groundtruth(:,t), [1, scenarioParam.nMeasAtIndividualTimeStep(t)])...
+                + scenarioParam.measNoise.sample(scenarioParam.nMeasAtIndividualTimeStep(t));
         end
-    elseif isa(scenarioParam.measNoise, 'GaussianDistribution')
-        measurements = groundtruth+scenarioParam.measNoise.sample(nMeasUpUntilTimeStep(end));
     end
 end
-mustBeNonNan(measurements);
+cellfun(@(measCell)mustBeNonNan(measCell), measurements);
 end

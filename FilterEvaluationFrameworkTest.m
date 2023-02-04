@@ -10,7 +10,7 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
         FilterEvaluationFrameworkTest < matlab.unittest.TestCase
     % @author Florian Pfaff pfaff@kit.edu
     % @date 2016-2023
-    % V2.19
+    % V3.0
     properties (Constant)
         noRunsDefault = 10
     end
@@ -33,7 +33,7 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
                 'name', {'iff', 'sqff', 'pf', 'twn'}, ...
                 'filterParams', {[5, 7], [5, 7], [21, 22], NaN});
             startEvaluation(scenarioName, filters, testCase.noRunsDefault, ...
-                saveFolder = tempFixture(1).Folder, initialSeed = 1, autoWarningOnOff=false);
+                saveFolder = tempFixture(1).Folder, initialSeed = 2, autoWarningOnOff=false);
             paramTimeAndErrorPerFilter = plotResults();
             testCase.verifyLessThan([paramTimeAndErrorPerFilter.meanErrorAllConfigs], pi);
         end

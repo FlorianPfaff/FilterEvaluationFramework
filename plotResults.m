@@ -1,7 +1,7 @@
 function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds, linBoundedErrorMode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.15
+% V3.0
 arguments (Input)
     filenames {mustBeA(filenames, {'cell', 'char'})} = ''
     plotLog (2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
@@ -64,7 +64,7 @@ elseif size(groundtruths{1}, 1) == 1 || ismember('htpf', {results.filterName}) |
 elseif ~any(contains({results.filterName}, {'symm', 'hhgf', 'bingham'}, 'IgnoreCase', true)) && (ismember('ishf', {results.filterName}) || ismember('sqshf', {results.filterName}) || ismember('sgf', {results.filterName}) || ismember('hgf', {results.filterName}) || ismember('vmf', {results.filterName}))
     mode = 'hypersphereGeneral';
 elseif any(contains({results.filterName}, {'symm', 'hhgf', 'bingham'}, 'IgnoreCase', true))
-    mode = 'hypersphereSymm';
+    mode = 'hypersphereSymmetric';
 else
     error('Could not detect if spherical or toroidal scenario');
 end

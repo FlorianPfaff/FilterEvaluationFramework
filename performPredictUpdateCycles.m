@@ -1,12 +1,12 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams, cumulatedUpdatesPreferred)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.20
+% V3.0
 arguments
-    scenarioParam struct {mustBeNonempty}
+    scenarioParam (1,1) struct {mustBeNonempty}
     filterParam struct {mustBeNonempty}
     groundtruth double {mustBeNonempty}
-    measurements double {mustBeNonempty}
+    measurements (1,:) cell {mustBeNonempty}
     precalculatedParams struct = struct()
     cumulatedUpdatesPreferred (1,1) logical = (contains(filterParam.name, 'shf')); % Currently this only provides an advantage for the shf
 end
@@ -22,7 +22,7 @@ if cumulatedUpdatesPreferred && any(scenarioParam.nMeasAtIndividualTimeStep>1) &
 end
 
 if scenarioParam.plot
-    plotFilterState(filter, groundtruth, measurements, 1, 0);
+    plotFilterState(filter, groundtruth, [measurements{:}], 1, 0);
 end
 allEstimates = NaN(size(groundtruth));
 tic;
@@ -37,11 +37,11 @@ for t = 1:scenarioParam.timesteps
         % assumed to use the same likelihood.
         % Use all measurements
         assert(scenarioParam.useLikelihood, 'Cumulative updates only supported when using likelihoods');
-        allMeasCurrTimeStepCell = num2cell(measurements(:, nMeasUpUntilTimeStep(t)+1:nMeasUpUntilTimeStep(t+1)));
+        allMeasCurrTimeStepCell = num2cell(measurements{1, t});
         filter.updateNonlinear(likelihoodsForFilter(nMeasUpUntilTimeStep(t)+1:nMeasUpUntilTimeStep(t+1)), allMeasCurrTimeStepCell);
     else
         nUpdates = scenarioParam.nMeasAtIndividualTimeStep(t);
-        allMeasCurrTimeStep = measurements(:, nMeasUpUntilTimeStep(t)+1:nMeasUpUntilTimeStep(t+1));
+        allMeasCurrTimeStep = measurements{t};
         for m = 1:nUpdates
             currMeas = allMeasCurrTimeStep(:, m);
             if ~scenarioParam.useLikelihood
@@ -60,7 +60,7 @@ for t = 1:scenarioParam.timesteps
             end
         end
         if scenarioParam.plot
-            plotFilterState(filter, groundtruth, measurements, t, m);
+            plotFilterState(filter, groundtruth, [measurements{:}], t, m);
         end
     end
 
@@ -77,7 +77,7 @@ for t = 1:scenarioParam.timesteps
             predictionRoutine(scenarioParam.inputs(:,t));
         end
         if scenarioParam.plot && t ~= scenarioParam.timesteps % No gt for timeesteps+1 so cannot plot then
-            plotFilterState(filter, groundtruth, measurements, t+1, 0);
+            plotFilterState(filter, groundtruth, [measurements{:}], t+1, 0);
         end
     end
 end

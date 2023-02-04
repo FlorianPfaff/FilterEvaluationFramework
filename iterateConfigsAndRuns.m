@@ -1,7 +1,7 @@
 function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure, autoWarningOnOff)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.20
+% V3.0
 arguments
     scenarioParam struct
     filters struct
@@ -17,8 +17,8 @@ end
 
 nConfigs = sum(cellfun(@numel, {filters.filterParams}));
 t = NaN(nConfigs, noRuns);
-groundtruths = cell(1, noRuns);
-measurements = cell(1, noRuns);
+groundtruths = cell(noRuns, 1);
+measurements = cell(noRuns, scenarioParam.timesteps);
 runFailed = false(nConfigs, noRuns);
 
 if convertToPointEstimateDuringRuntime
@@ -39,10 +39,12 @@ for r = 1:noRuns
     rng(scenarioParam.allSeeds(r));
     x0 = scenarioParam.initialPrior.sample(1);
     % x0 is saved as well
-    groundtruths{1, r} = generateGroundtruth(x0, scenarioParam);
-    measurements{1, r} = generateMeasurements(groundtruths{1, r}, scenarioParam);
-    assert(isequal(size(unique(reshape(measurements{1, r}, size(measurements{1, r},1), [])', 'rows')),...
-        size(reshape(measurements{1, r}, size(measurements{1, r},1), [])')),...
+    groundtruths{r} = generateGroundtruth(x0, scenarioParam);
+    measurements(r, :) = generateMeasurements(groundtruths{r}, scenarioParam);
+    assert(~scenarioParam.plot || all(size(measurements{r},1)==cellfun(@(measCell)size(measCell,1),measurements(r,:))),...
+        'Plotting the states is currently only possible when measurements have the same dimensions.')
+    assert(isequal(size(unique(reshape([measurements{r, :}], size([measurements{r, :}],1), [])', 'rows')),...
+        size(reshape([measurements{r, :}], size([measurements{r, :}],1), [])')),...
         'Two identical measurements were generated. This should not happen, check your measurement generating function.');
 end
 rng('shuffle'); % We set the seed up there, so shuffle rng now to prevent deterministic behavior of the filters
@@ -59,15 +61,15 @@ for filterNo = 1:numel(filters)
         fprintf('filter %i (%s) config %i (%i) doing dry run\n', filterNo, filters(filterNo).name, config, filters(filterNo).filterParams(config));
         if autoWarningOnOff, warning('on'), end % Allow warnings in dry run to see if anything may be wrong.
         % Use last scenario to prevent gaining an advantage by having the same inputs in the next run
-        try
-            timeForPreload = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{1, end}, measurements{1, end}, precalculatedParams);
-        catch err
-            if ~tolerateFailure
-                rethrow(err);
-            end
-            timeForPreload = 1;
-            warning('Precalculation run failed')
-        end
+%         try
+            timeForPreload = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{1, end}, measurements(end, :), precalculatedParams);
+%         catch err
+%             if ~tolerateFailure
+%                 rethrow(err);
+%             end
+%             timeForPreload = 1;
+%             warning('Precalculation run failed')
+%         end
         if timeForPreload < 0.01, plotEvery = 1000;
         elseif timeForPreload < 0.1, plotEvery = 100;
         elseif timeForPreload < 1, plotEvery = 10;
@@ -82,16 +84,16 @@ for filterNo = 1:numel(filters)
             try
                 if ~convertToPointEstimateDuringRuntime && ~extractAllPointEstimates
                     % Only save filter states, nothing else
-                    [t(currConfigIndex, r), lastFilterStates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{1, r}, measurements{1, r}, precalculatedParams);
+                    [t(currConfigIndex, r), lastFilterStates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{r}, measurements(r, :), precalculatedParams);
                 elseif ~convertToPointEstimateDuringRuntime && extractAllPointEstimates
                     % We still want to the save the filter states, but we
                     % get the last etimates for free since all point
                     % estimates should be extracted. Thus, we save them.
-                    [t(currConfigIndex, r), lastFilterStates{currConfigIndex, r}, lastEstimates{currConfigIndex, r}, allEstimates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{1, r}, measurements{1, r}, precalculatedParams);
+                    [t(currConfigIndex, r), lastFilterStates{currConfigIndex, r}, lastEstimates{currConfigIndex, r}, allEstimates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{r}, measurements(r, :), precalculatedParams);
                 elseif convertToPointEstimateDuringRuntime && ~extractAllPointEstimates
-                    [t(currConfigIndex, r), ~, lastEstimates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{1, r}, measurements{1, r}, precalculatedParams);
+                    [t(currConfigIndex, r), ~, lastEstimates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{r}, measurements(r, :), precalculatedParams);
                 elseif convertToPointEstimateDuringRuntime && extractAllPointEstimates
-                    [t(currConfigIndex, r), ~, lastEstimates{currConfigIndex, r}, allEstimates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{1, r}, measurements{1, r}, precalculatedParams);
+                    [t(currConfigIndex, r), ~, lastEstimates{currConfigIndex, r}, allEstimates{currConfigIndex, r}] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruths{r}, measurements(r, :), precalculatedParams);
                 else
                     error('This should not happen.');
                 end
