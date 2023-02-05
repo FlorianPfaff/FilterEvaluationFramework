@@ -1,15 +1,20 @@
 function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure, autoWarningOnOff)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.0
-arguments
-    scenarioParam struct
-    filters struct
-    noRuns (1, 1) double {mustBeInteger, mustBePositive}
-    convertToPointEstimateDuringRuntime (1, 1) logical = false
-    extractAllPointEstimates (1, 1) logical = false
-    tolerateFailure (1, 1) logical = false
-    autoWarningOnOff (1, 1) logical = true
+% V3.1
+arguments (Input)
+    scenarioParam (1,1) struct
+    filters (1,:) struct
+    noRuns (1,1) double {mustBeInteger, mustBePositive}
+    convertToPointEstimateDuringRuntime (1,1) logical = false
+    extractAllPointEstimates (1,1) logical = false
+    tolerateFailure (1,1) logical = false
+    autoWarningOnOff (1,1) logical = true
+end
+arguments (Output)
+    results (1,:) struct
+    groundtruths (:,1) cell
+    measurements (:,:) cell
 end
 if extractAllPointEstimates
     warning('FilterEvaluationFramework:SlowdownExtractEstimates', 'Extracting all point estimates can have a massive impact on the run time. Use this for debugging only')

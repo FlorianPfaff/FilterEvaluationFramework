@@ -1,10 +1,13 @@
 function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.20
-arguments
+% V3.1
+arguments (Input)
     scenario char
     scenarioCustomizationParams
+end
+arguments (Output)
+    scenarioParam (1,1) struct
 end
 scenarioParam = struct('initialPrior', @()error('Scenario param not initialized'), ...
     'timesteps', NaN, 'measPerStep', 1, 'allSeeds', NaN);

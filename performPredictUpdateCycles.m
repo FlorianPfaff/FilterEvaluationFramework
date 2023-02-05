@@ -1,14 +1,20 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams, cumulatedUpdatesPreferred)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.0
-arguments
+% V3.1
+arguments (Input)
     scenarioParam (1,1) struct {mustBeNonempty}
-    filterParam struct {mustBeNonempty}
+    filterParam (1,1) struct {mustBeNonempty}
     groundtruth double {mustBeNonempty}
     measurements (1,:) cell {mustBeNonempty}
     precalculatedParams struct = struct()
     cumulatedUpdatesPreferred (1,1) logical = (contains(filterParam.name, 'shf')); % Currently this only provides an advantage for the shf
+end
+arguments (Output)
+    timeElapsed (1,1) double
+    lastFilterState % Can be AbstractDistribution but need not be one if Filter is parametrized differently
+    lastEstimate (:,1) double
+    allEstimates % Only set if all should be extracted
 end
 % Configure filter
 [filter, predictionRoutine, likelihoodsForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams);

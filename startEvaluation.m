@@ -6,7 +6,7 @@ arguments
     scenario char
     % Struct with filternames and number of parameters. See
     % FilterEvaluationTest for examples
-    filters struct
+    filters (1,:) struct {mustBeNonempty}
     noRuns (1, 1) double
     opt.saveFolder char = '.'
     opt.plotEachStep (1, 1) logical = false % Useful for debugging

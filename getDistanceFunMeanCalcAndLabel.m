@@ -1,9 +1,14 @@
 function [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.20
-arguments
+% V3.1
+arguments (Input)
     mode char
+end
+arguments (Output)
+    distanceFunction (1,1) function_handle
+    extractMean
+    errorLabel char {mustBeNonempty}
 end
 switch mode
     case {'circleSymm1Highest', 'circleSymm2Highest', 'circleSymm3Highest', 'circleSymm4Highest', 'circleSymm5Highest', ...
@@ -71,6 +76,8 @@ switch mode
     otherwise
         error('Mode not recognized');
 end
+assert(nargin(distanceFunction)==2);
+assert(ischar(extractMean) || nargin(extractMean)==1);
 end
 
 function est = extractEstimateSE2(filterState)

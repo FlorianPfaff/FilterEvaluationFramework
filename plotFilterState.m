@@ -1,13 +1,13 @@
 function plotFilterState(filter, groundtruth, measurements, timeIndex, measIndex)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V2.14
+% @date 2016-2023
+% V3.1
 arguments
-    filter(1, 1) AbstractFilter
-    groundtruth(:, :) double
-    measurements(:, :) double
-    timeIndex(1, 1) {mustBeInteger, mustBePositive}
-    measIndex(1, 1) {mustBeInteger, mustBeNonnegative}
+    filter (1,1) AbstractFilter
+    groundtruth (:,:) double
+    measurements (:,:) double
+    timeIndex (1,1) {mustBeInteger, mustBePositive}
+    measIndex (1,1) {mustBeInteger, mustBeNonnegative}
 end
 currentGroundtruth = groundtruth(:, timeIndex);
 if isa(filter, 'AbstractHypertoroidalFilter') || isa(filter.getEstimate(), 'AbstractHypertoroidalDistribution')

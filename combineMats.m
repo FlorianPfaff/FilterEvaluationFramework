@@ -1,10 +1,10 @@
 function [results, groundtruths, scenarioParam] = combineMats(filenamesOrPath, checkForEqualScenariosThroughly, saveMat, defaultActionDuplicateScenario, defaultActionUnreadableFile)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V2.13
+% V3.1
 arguments
     filenamesOrPath {mustBeA(filenamesOrPath, {'char', 'cell'}), mustBeNonempty}
-    checkForEqualScenariosThroughly(1, 1) logical = false
+    checkForEqualScenariosThroughly (1, 1) logical = false
     saveMat (1,1) logical = false
     % Choose default for duplicate scenarios. "d" means delete, "s" skip.
     % Leave empty to be asked
