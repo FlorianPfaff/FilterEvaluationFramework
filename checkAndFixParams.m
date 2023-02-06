@@ -59,54 +59,48 @@ elseif ~isfield(scenarioParam, 'nMeasAtIndividualTimeStep')
 end
 assert(scenarioParam.useLikelihood == (isfield(scenarioParam, 'likelihood') || isfield(scenarioParam, 'likelihoodGenerator')), 'Likelihood or likelihoodGenerator is given but useLikelihood is not set (or the other way around). This is unexpected.');
 if isfield(scenarioParam, 'measGenerator')
-    nTotalMeas = sum(scenarioParam.nMeasAtIndividualTimeStep);
-    switch numel(scenarioParam.measGenerator)
-        case 1
-            % If only one given, repeat in cell array (if only one, it is
-            % kept as it is).
-            if ~iscell(scenarioParam.measGenerator)
-                measGenCell = repmat({scenarioParam.measGenerator}, 1, nTotalMeas);
-            else
-                measGenCell = repmat(scenarioParam.measGenerator, 1, nTotalMeas);
-            end
-        case scenarioParam.timesteps
-            % If equal to the number of time steps, repeat accoring to the
-            % number of measurements in each time step. First case is executed if
-            % scenarioParam.timesteps=1, which is also fine.
-            measGenDoubleCell = arrayfun(@(i){repmat(scenarioParam.measGenerator(i),[1,scenarioParam.nMeasAtIndividualTimeStep(i)])}, 1:scenarioParam.timesteps);
-            measGenCell = [measGenDoubleCell{:}];
-        case scenarioParam.timesteps
-            % Already of correct size
-            measGenCell = scenarioParam.measGenerator;
-        otherwise
-            error('scenarioParam.measGenerator is of unexpected size.');
+    if numel(scenarioParam.measGenerator)==1
+        % If only one given, repeat in cell array.
+        if ~iscell(scenarioParam.measGenerator)
+            scenarioParam.measGenerator = repmat({scenarioParam.measGenerator}, 1, scenarioParam.timesteps);
+        else
+            scenarioParam.measGenerator = repmat(scenarioParam.measGenerator, 1, scenarioParam.timesteps);
+        end
     end
-    scenarioParam.measGenerator = measGenCell;
+    % Either one is a cell array or none is
+    assert(all(iscell(scenarioParam.measGenerator{1})==cellfun(@(measGenForOneTimeStep)iscell(measGenForOneTimeStep), scenarioParam.measGenerator)));
+    % If not a cell itself (or single element), pack into cell and repeat
+    % according to number of measurements in the respective time step
+    if all(cellfun(@(measGenForOneTimeStep)iscell(measGenForOneTimeStep), scenarioParam.measGenerator))||...
+       all(cellfun(@(measGenForOneTimeStep)numel(measGenForOneTimeStep)==1, scenarioParam.measGenerator))
+       scenarioParam.measGenerator = arrayfun(@(i){repmat(scenarioParam.measGenerator(i),[1,scenarioParam.nMeasAtIndividualTimeStep(i)])}, 1:scenarioParam.timesteps);
+    else
+        assert(isequal(scenarioParam.nMeasAtIndividualTimeStep,...
+            cellfun(@(measGenForOneTimeStep)numel(measGenForOneTimeStep), scenarioParam.measGenerator)),...
+            'Size of likelihood cell array is not compatible. It is has to be a cell array of t elements comprising cell arrays with a number of elements equal to nMeasAtIndividualTimeStep.');
+    end
 end
 if isfield(scenarioParam, 'likelihood')
-    nTotalMeas = sum(scenarioParam.nMeasAtIndividualTimeStep);
-    switch numel(scenarioParam.likelihood)
-        case 1
-            % If only one given, repeat in cell array (if only one, it is
-            % kept as it is).
-            if ~iscell(scenarioParam.likelihood)
-                likelihoodCell = repmat({scenarioParam.likelihood}, 1, nTotalMeas);
-            else
-                likelihoodCell = repmat(scenarioParam.likelihood, 1, nTotalMeas);
-            end
-        case scenarioParam.timesteps
-            % If equal to the number of time steps, repeat accoring to the
-            % number of measurements in each time step. First case is executed if
-            % scenarioParam.timesteps=1, which is also fine.
-            likelihoodDoubleCell = arrayfun(@(i){repmat(scenarioParam.likelihood(i),[1,scenarioParam.nMeasAtIndividualTimeStep(i)])}, 1:scenarioParam.timesteps);
-            likelihoodCell = [likelihoodDoubleCell{:}];
-        case scenarioParam.timesteps
-            % Already of correct size
-            likelihoodCell = scenarioParam.likelihood;
-        otherwise
-            error('scenarioParam.likelihood is of unexpected size.');
+    if numel(scenarioParam.likelihood)==1
+        % If only one given, repeat in cell array.
+        if ~iscell(scenarioParam.likelihood)
+            scenarioParam.likelihood = repmat({scenarioParam.likelihood}, 1, scenarioParam.timesteps);
+        else
+            scenarioParam.likelihood = repmat(scenarioParam.likelihood, 1, scenarioParam.timesteps);
+        end
     end
-    scenarioParam.likelihood = likelihoodCell;
+    % Either one is a cell array or none is
+    assert(all(iscell(scenarioParam.likelihood{1})==cellfun(@(likelihoodForOneTimeStep)iscell(likelihoodForOneTimeStep), scenarioParam.likelihood)));
+    % If not a cell itself (or single element), pack into cell and repeat
+    % according to number of measurements in the respective time step
+    if all(cellfun(@(likelihoodForOneTimeStep)iscell(likelihoodForOneTimeStep), scenarioParam.likelihood))||...
+       all(cellfun(@(likelihoodForOneTimeStep)numel(likelihoodForOneTimeStep)==1, scenarioParam.likelihood))
+       scenarioParam.likelihood = arrayfun(@(i){repmat(scenarioParam.likelihood(i),[1,scenarioParam.nMeasAtIndividualTimeStep(i)])}, 1:scenarioParam.timesteps);
+    else
+        assert(isequal(scenarioParam.nMeasAtIndividualTimeStep,...
+            cellfun(@(likelihoodForOneTimeStep)numel(likelihoodForOneTimeStep), scenarioParam.likelihood)),...
+            'Size of likelihood cell array is not compatible. It is has to be a cell array of t elements comprising cell arrays with a number of elements equal to nMeasAtIndividualTimeStep.');
+    end
 end
 assert(isfield(scenarioParam, 'manifoldType')); % See manifoldType in plotResults, e.g., hypertorus
 assert(~scenarioParam.useTransition || isfield(scenarioParam, 'genNextStateWithoutNoise') || isfield(scenarioParam, 'genNextStateWithNoise'), 'Must have function genNextStateWithoutNoise for nonlinear prediction.');

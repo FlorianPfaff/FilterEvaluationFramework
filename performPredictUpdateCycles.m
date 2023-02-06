@@ -1,7 +1,6 @@
 function [timeElapsed, lastFilterState, lastEstimate, allEstimates] = performPredictUpdateCycles(scenarioParam, filterParam, groundtruth, measurements, precalculatedParams, cumulatedUpdatesPreferred)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.1
 arguments (Input)
     scenarioParam (1,1) struct {mustBeNonempty}
     filterParam (1,1) struct {mustBeNonempty}
@@ -32,7 +31,6 @@ if scenarioParam.plot
 end
 allEstimates = NaN(size(groundtruth));
 tic;
-nMeasUpUntilTimeStep = [0, cumsum(scenarioParam.nMeasAtIndividualTimeStep)];
 % Perform evaluation
 for t = 1:scenarioParam.timesteps
     %% Update
@@ -44,7 +42,7 @@ for t = 1:scenarioParam.timesteps
         % Use all measurements
         assert(scenarioParam.useLikelihood, 'Cumulative updates only supported when using likelihoods');
         allMeasCurrTimeStepCell = num2cell(measurements{1, t});
-        filter.updateNonlinear(likelihoodsForFilter(nMeasUpUntilTimeStep(t)+1:nMeasUpUntilTimeStep(t+1)), allMeasCurrTimeStepCell);
+        filter.updateNonlinear(likelihoodsForFilter{t}, allMeasCurrTimeStepCell);
     else
         nUpdates = scenarioParam.nMeasAtIndividualTimeStep(t);
         allMeasCurrTimeStep = measurements{t};
@@ -60,7 +58,7 @@ for t = 1:scenarioParam.timesteps
             elseif strcmpi(filterParam.name, 'se2ukfm')
                 filter.updatePositionMeasurement(scenarioParam.gaussianMeasNoise.C, currMeas)
             elseif ~strcmpi(filterParam.name, 'bingham')
-                filter.updateNonlinear(likelihoodsForFilter{t}, currMeas);
+                filter.updateNonlinear(likelihoodsForFilter{t}{m}, currMeas);
             else
                 error('Unsupported configuration.');
             end

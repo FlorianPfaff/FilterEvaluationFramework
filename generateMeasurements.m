@@ -53,12 +53,12 @@ elseif isfield(scenarioParam, 'measGenerator')
     else
         error('Size of scenarioParam.measGenerator is incompatible with the number of time steps or measurements per time step.');
     end
-    measEqOutputSize = numel(measGenCell{1}(groundtruth(:, 1)));
+    measEqOutputSize = numel(measGenCell{1}{1}(groundtruth(:, 1)));
     measurements = cell(1, scenarioParam.timesteps);
     for t = 1:scenarioParam.timesteps % Apply measEq in every time step
         measurements{t} = NaN(measEqOutputSize, scenarioParam.nMeasAtIndividualTimeStep(t));
         for m = 1:scenarioParam.nMeasAtIndividualTimeStep(t)
-            measurements{t}(:,m) = measGenCell{nMeasUpUntilTimeStep(t)+m}(groundtruth(:, t));
+            measurements{t}(:,m) = measGenCell{t}{m}(groundtruth(:, t));
         end
     end
 else

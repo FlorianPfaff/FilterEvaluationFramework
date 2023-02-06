@@ -247,8 +247,8 @@ switch filterParam.name
         filter.setState(precalculatedParams.priorForFilter);
         assert(all(cellfun(@(l)isequal(l,scenarioParam.likelihood{1}),scenarioParam.likelihood)),...
             'Different likelihood are currently unsupported for the SE2BinghamFilter.');
-        likelihoodForFilter = @(z, x)scenarioParam.likelihood{1}(z, ...
-            AbstractSE2Distribution.dualQuaternionToAnglePos(x));
+        likelihoodForFilter = repmat({{@(z, x)scenarioParam.likelihood{1}{1}(z, ...
+            AbstractSE2Distribution.dualQuaternionToAnglePos(x))}}, [1, scenarioParam.timesteps]);
         predictionRoutine = @()filter.predictNonlinear(scenarioParam.genNextStateWithoutNoise, precalculatedParams.sysNoiseForFilter);
     case 'se2ukfm'
         filter = SE2UKFM(3, filterParam.parameter*ones(3, 1));
@@ -280,15 +280,5 @@ switch filterParam.name
         predictionRoutine = @()NaN; % Do nothing
     otherwise
         error('Filter currently unsupported');
-end
-if scenarioParam.useLikelihood && isfield(scenarioParam, 'likelihood') && ~iscell(likelihoodForFilter)
-    likelihoodForFilter = repmat({likelihoodForFilter}, 1, scenarioParam.timesteps);
-elseif numel(likelihoodForFilter)  == scenarioParam.timesteps
-    likelihoodForFilter = reshape(repmat(likelihoodForFilter(:)',[sum(scenarioParam.nMeasAtIndividualTimeStep),1]),1,[]);
-elseif numel(likelihoodForFilter)  == sum(scenarioParam.nMeasAtIndividualTimeStep)
-    likelihoodForFilter = repmat(likelihoodForFilter(:)',[1,sum(scenarioParam.nMeasAtIndividualTimeStep)]);
-elseif isempty(likelihoodForFilter) % Do nothing
-else
-    error('Likelihood is in unknown format');
 end
 end
