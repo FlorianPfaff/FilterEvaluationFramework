@@ -28,7 +28,7 @@ if cumulatedUpdatesPreferred && any(scenarioParam.nMeasAtIndividualTimeStep>1) &
 end
 
 if scenarioParam.plot
-    plotFilterState(filter, groundtruth, [measurements{:}], 1, 0);
+    plotFilterStateAndGt(filter, groundtruth, [measurements{:}], 1, 0);
 end
 allEstimates = NaN(size(groundtruth));
 tic;
@@ -66,7 +66,7 @@ for t = 1:scenarioParam.timesteps
             end
         end
         if scenarioParam.plot
-            plotFilterState(filter, groundtruth, [measurements{:}], t, m);
+            plotFilterStateAndGt(filter, groundtruth, [measurements{:}], t, m);
         end
     end
 
@@ -83,7 +83,7 @@ for t = 1:scenarioParam.timesteps
             predictionRoutine(scenarioParam.inputs(:,t));
         end
         if scenarioParam.plot && t ~= scenarioParam.timesteps % No gt for timeesteps+1 so cannot plot then
-            plotFilterState(filter, groundtruth, [measurements{:}], t+1, 0);
+            plotFilterStateAndGt(filter, groundtruth, [measurements{:}], t+1, 0);
         end
     end
 end

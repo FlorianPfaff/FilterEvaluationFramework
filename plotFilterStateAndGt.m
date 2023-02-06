@@ -1,36 +1,25 @@
-function plotFilterState(filter, groundtruth, measurements, timeIndex, measIndex)
+function plotFilterStateAndGt(filter, groundtruth, measurements, timeIndex, measIndex, scenarioParam)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.1
 arguments
     filter (1,1) AbstractFilter
     groundtruth (:,:) double
     measurements (:,:) double
     timeIndex (1,1) {mustBeInteger, mustBePositive}
     measIndex (1,1) {mustBeInteger, mustBeNonnegative}
+    scenarioParam struct = struct()
 end
 currentGroundtruth = groundtruth(:, timeIndex);
 if isa(filter, 'AbstractHypertoroidalFilter') || isa(filter.getEstimate(), 'AbstractHypertoroidalDistribution')
     figure(765), clf, shg
-    if isa(filter, 'AbstractGridFilter')
-        filter.getEstimate.plotInterpolated();
-    else
-        filter.getEstimate.plot();
-    end
+    filter.plotFilterState();
     if filter.getEstimate().dim == 1
-        setupAxisCircular('x');
         line([currentGroundtruth, currentGroundtruth], ylim(), 'color', 'r');
-    else
-        setupAxisCircular('x', 'y');
     end
     drawnow, pause(0.5);
 elseif isa(filter, 'AbstractHypersphericalFilter') || isa(filter.getEstimate(), 'AbstractHypersphericalDistribution')
     figure(765), clf, shg
-    if isa(filter, 'SphericalGridFilter')
-        filter.getEstimate.plotInterpolated();
-    else
-        filter.getEstimate.plot();
-    end
+    filter.plotFilterState();
     xlabel('x');
     ylabel('y');
     zlabel('z');
@@ -75,6 +64,6 @@ elseif isa(filter, 'AbstractSE2Filter') || isa(filter.getEstimate(), 'AbstractSE
     AbstractSE2Distribution.plotSE2trajectory(groundtruth(1, (max(timeIndex - 10, 1)):timeIndex), groundtruth(2:3, (max(timeIndex - 10, 1)):timeIndex), false);
     scatter(measurements(1, (max(timeIndex - 10, 1)):timeIndex), measurements(2, (max(timeIndex - 10, 1)):timeIndex), 'x');
 else
-    error('Cannot plot for this domain.');
+    filter.plotFilterState();    
 end
 end
