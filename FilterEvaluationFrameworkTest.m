@@ -10,7 +10,6 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
         FilterEvaluationFrameworkTest < matlab.unittest.TestCase
     % @author Florian Pfaff pfaff@kit.edu
     % @date 2016-2023
-    % V3.0
     properties (Constant)
         noRunsDefault = 10
     end
@@ -332,5 +331,17 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
             testCase.verifyLessThan([paramTimeAndErrorPerFilter.meanErrorAllConfigs], 1.5);
         end
 
+        function testGenerateGTAndMeasurementsMTT(testCase)
+            scenarioName = 'MTT3targetsR2';
+            scenarioParam = scenarioDatabase(scenarioName);
+            scenarioParam = checkAndFixParams(scenarioParam);
+            x0T1 = [1;1;1;1];
+            x0T2 = -[1;1;1;1];
+            x0T3 = [1;-1;1;-1];
+            groundtruth = generateGroundtruth(cat(3, x0T1, x0T2, x0T3), scenarioParam);
+            measurements = generateMeasurements(groundtruth, scenarioParam);
+            testCase.verifySize(measurements, [1,scenarioParam.timesteps])
+            cellfun(@(m)testCase.verifySize(m, [2,3]), measurements)
+        end
     end
 end

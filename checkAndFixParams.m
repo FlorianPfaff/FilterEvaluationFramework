@@ -1,7 +1,6 @@
 function scenarioParam = checkAndFixParams(scenarioParam)
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2022
-% V2.20
+% @date 2016-2023
 arguments (Input)
     scenarioParam (1,1) struct
 end
@@ -30,23 +29,34 @@ switch scenarioParam.manifoldType
         mustBeA(scenarioParam.initialPrior, 'AbstractSE2Distribution')
     case 'se3'
         mustBeA(scenarioParam.initialPrior, 'AbstractSE3Distribution')
+    case 'MTTEuclidean'
+        mustBeA(scenarioParam.initialPrior, 'AbstractLinearDistribution')
     otherwise
         error('Manifold not supported.')
 end
 mustBeNonempty(scenarioParam.timesteps);
 mustBeInteger(scenarioParam.timesteps);
 mustBeNonnegative(scenarioParam.timesteps); % 0 could be used to only consider the prior
-if isfield(scenarioParam, 'nMeasAtIndividualTimeStep') && isfield(scenarioParam, 'measPerStep')
+if contains(scenarioParam.manifoldType, 'MTT')
+    assert(~isfield(scenarioParam, 'nMeasAtIndividualTimeStep') && ~isfield(scenarioParam, 'measPerStep'))
+    if ~isfield(scenarioParam, 'detectionProbability')
+        scenarioParam.detectionProbability = 1;
+    end
+    if ~isfield(scenarioParam, 'clutterRate')
+        scenarioParam.clutterRate = 0;
+    end
+elseif isfield(scenarioParam, 'nMeasAtIndividualTimeStep') && isfield(scenarioParam, 'measPerStep')
     error('Do not provide nMeasAtIndividualTimeStep and measPerStep at the same time.')
 elseif ~isfield(scenarioParam, 'nMeasAtIndividualTimeStep') && isfield(scenarioParam, 'measPerStep')
     mustBeInteger(scenarioParam.measPerStep);
     mustBePositive(scenarioParam.measPerStep);
     scenarioParam.nMeasAtIndividualTimeStep = scenarioParam.measPerStep * ones(1,scenarioParam.timesteps);
     scenarioParam = rmfield(scenarioParam, 'measPerStep');
+    mustBePositive(scenarioParam.nMeasAtIndividualTimeStep);
+    mustBeInteger(scenarioParam.nMeasAtIndividualTimeStep);
 elseif ~isfield(scenarioParam, 'nMeasAtIndividualTimeStep')
     scenarioParam.nMeasAtIndividualTimeStep = ones(1,scenarioParam.timesteps);
 end
-mustBeNonempty(scenarioParam.nMeasAtIndividualTimeStep);
 assert(scenarioParam.useLikelihood == (isfield(scenarioParam, 'likelihood') || isfield(scenarioParam, 'likelihoodGenerator')), 'Likelihood or likelihoodGenerator is given but useLikelihood is not set (or the other way around). This is unexpected.');
 if isfield(scenarioParam, 'measGenerator')
     nTotalMeas = sum(scenarioParam.nMeasAtIndividualTimeStep);
@@ -106,8 +116,6 @@ assert(isfield(scenarioParam, 'useLikelihood') && isfield(scenarioParam, 'useTra
 assert(xor(isfield(scenarioParam, 'measGenerator'), isfield(scenarioParam, 'measNoise')));
 mustBePositive(scenarioParam.timesteps);
 mustBeInteger(scenarioParam.timesteps);
-mustBePositive(scenarioParam.nMeasAtIndividualTimeStep);
-mustBeInteger(scenarioParam.nMeasAtIndividualTimeStep);
 assert(xor(isfield(scenarioParam, 'genNextStateWithNoise'), isfield(scenarioParam, 'sysNoise')));
 assert(isa(scenarioParam.initialPrior, 'AbstractDistribution'));
 
@@ -142,3 +150,8 @@ end
 if ~isfield(scenarioParam, 'inputs')
     scenarioParam.inputs = [];
 end
+
+if ~isfield(scenarioParam, 'nTargets')
+    scenarioParam.nTargets = 1;
+end
+assert(numel(scenarioParam.initialPrior) == scenarioParam.nTargets);

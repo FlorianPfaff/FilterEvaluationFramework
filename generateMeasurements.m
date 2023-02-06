@@ -2,16 +2,33 @@ function measurements = generateMeasurements(groundtruth, scenarioParam)
 % Generates measurements
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.0
 arguments (Input)
-    groundtruth double
+    groundtruth (:,:,:) double
     scenarioParam (1,1) struct
 end
 arguments (Output)
     measurements (1,:) cell
 end
-measurements = cell(1,scenarioParam.timesteps);
-if isfield(scenarioParam, 'measGenerator')
+measurements = cell(1, scenarioParam.timesteps);
+if contains(scenarioParam.manifoldType, 'MTT')
+    nObervations = binornd(1, scenarioParam.detectionProbability*ones(1, scenarioParam.timesteps, scenarioParam.nTargets));
+    assert(scenarioParam.clutterRate == 0, 'Clutter currently not supported.')
+    nMeasAtIndividualTimeStep = sum(nObervations, 3);
+    for t = 1:scenarioParam.timesteps
+        measurements{t} = NaN(size(scenarioParam.measMatrixForEachTarget, 1), nMeasAtIndividualTimeStep(t));
+        measNo = 0;
+        for targetNo = 1:scenarioParam.nTargets
+            if nObervations(targetNo) == 1
+                measNo = measNo + 1;
+                measurements{t}(:, measNo) = scenarioParam.measMatrixForEachTarget * groundtruth(:, t, targetNo)...
+                    + scenarioParam.measNoise.sample(1);
+            else
+                assert(nObervations==0, 'Multiple measurements currently not supported.')
+            end
+        end
+        assert(measNo == nMeasAtIndividualTimeStep(t));
+    end
+elseif isfield(scenarioParam, 'measGenerator')
     % Measurement generator can differ for different time steps and
     % measurements in one time step. If fewer measurement generators are
     % given repeat them.

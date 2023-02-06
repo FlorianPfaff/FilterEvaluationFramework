@@ -1,16 +1,15 @@
 function scenarioParam = scenarioDatabase(scenario, scenarioCustomizationParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.1
 arguments (Input)
     scenario char
-    scenarioCustomizationParams
+    scenarioCustomizationParams = []
 end
 arguments (Output)
     scenarioParam (1,1) struct
 end
 scenarioParam = struct('initialPrior', @()error('Scenario param not initialized'), ...
-    'timesteps', NaN, 'measPerStep', 1, 'allSeeds', NaN);
+    'timesteps', NaN, 'allSeeds', NaN);
 switch scenario
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%% Circular scenarios %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -352,6 +351,20 @@ switch scenario
         scenarioParam.measGenerator = @(x)x(5:7) + scenarioParam.gaussianMeasNoise.sample(1);
         scenarioParam.useLikelihood = true;
         scenarioParam.likelihood = @(z, x)mvnpdf(x(5:7, :)', z', scenarioParam.gaussianMeasNoise.C)';
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%% MTT scenarios %%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    case 'MTT3targetsR2'
+        scenarioParam.timesteps = 10;
+        scenarioParam.manifoldType = 'MTTEuclidean';
+        scenarioParam.T = 1;
+        scenarioParam.nTargets = 3;
+        scenarioParam.initialPrior = repmat(GaussianDistribution(zeros(4,1), diag(1:4)),1,scenarioParam.nTargets);
+        scenarioParam.measNoise = GaussianDistribution(zeros(2,1), diag(1:2));
+        scenarioParam.sysNoise = GaussianDistribution(zeros(4,1), diag(1:4));
+        scenarioParam.sysMatrixForEachTarget = blkdiag([1, scenarioParam.T; 0, 1], [1, scenarioParam.T; 0, 1]);
+        scenarioParam.measMatrixForEachTarget = [diag([1,0]), diag(1,-1)];
+        scenarioParam.S = 1; % Power spectral density of noise
     otherwise
         scenarioParam = scenarioCustomizationParams;
         if isempty(scenarioCustomizationParams)
