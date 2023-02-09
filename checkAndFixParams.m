@@ -45,6 +45,7 @@ if contains(scenarioParam.manifoldType, 'MTT')
     if ~isfield(scenarioParam, 'clutterRate')
         scenarioParam.clutterRate = 0;
     end
+    assert(isfield(scenarioParam, 'observedArea') || scenarioParam.clutterRate==0, 'Can only add clutter if observedArea is set.');
 elseif isfield(scenarioParam, 'nMeasAtIndividualTimeStep') && isfield(scenarioParam, 'measPerStep')
     error('Do not provide nMeasAtIndividualTimeStep and measPerStep at the same time.')
 elseif ~isfield(scenarioParam, 'nMeasAtIndividualTimeStep') && isfield(scenarioParam, 'measPerStep')

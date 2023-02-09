@@ -3,8 +3,7 @@ function [allDeviationsLastMat, allExpectedDeviationsLastMat] = determineAllDevi
 % deviation as the second output argument. This is useful when finding
 % the estimate that minimizes the expected deviation via fminbnd.
 % @author Florian Pfaff pfaff@kit.edu
-% @date 2016-2021
-% V1.0
+% @date 2016-2023
 arguments
     results struct
     extractMean
@@ -32,7 +31,7 @@ for config = 1:size(results, 2)
             finalEstimate = results(config).lastEstimates{run};
         elseif isa(extractMean, 'function_handle')
             if nargout == 1
-                finalEstimate = extractMean(results(config).lastFilterStates(run));
+                finalEstimate = extractMean(results(config).lastFilterStates(1, run, :));
             elseif nargout == 2
                 [finalEstimate, allExpectedDeviationsLastMat{config}(run)] = extractMean(results(config).lastFilterStates(run));
             else
@@ -87,7 +86,7 @@ for config = 1:size(results, 2)
             end
         end
         if ~isempty(finalEstimate)
-            allDeviationsLastMat{config}(run) = distanceFunction(finalEstimate, currGts{run}(:, end));
+            allDeviationsLastMat{config}(run) = distanceFunction(finalEstimate, currGts{run}(:, end, :));
         else % Set to inf if filter failed
             allDeviationsLastMat{config}(run) = inf;
         end
@@ -97,4 +96,5 @@ for config = 1:size(results, 2)
             results(config).filterName, results(config).filterParams, sum(isinf(allDeviationsLastMat{config})));
     end
 end
+cellfun(@mustBeNonNan, allDeviationsLastMat);
 end

@@ -34,7 +34,10 @@ tic;
 % Perform evaluation
 for t = 1:scenarioParam.timesteps
     %% Update
-    if performCumulativeUpdates
+    if contains(scenarioParam.manifoldType, 'MTT')
+        % All measurements are used for MTT
+        filter.updateLinear(measurements{1, t}, scenarioParam.measMatrixForEachTarget, scenarioParam.measNoise.covariance());
+    elseif performCumulativeUpdates
         % Only for filters that handle multiple update steps at
         % once better than consective steps. This can only be used if
         % the result should not be visualized. All update steps are
@@ -70,7 +73,7 @@ for t = 1:scenarioParam.timesteps
 
     %% Save results only when they are asked for because it takes time
     if nargout == 4 || scenarioParam.plot
-        allEstimates(:, t) = filter.getPointEstimate();
+        allEstimates(:, t, :) = filter.getPointEstimate();
     end
 
     %% Predict

@@ -1,7 +1,6 @@
 function paramTimeAndErrorPerFilter = plotResults(filenames, plotLog, plotStds, linBoundedErrorMode)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.0
 arguments (Input)
     filenames {mustBeA(filenames, {'cell', 'char'})} = ''
     plotLog (2, :) logical = [true; true] % Specified per axis per default, can set individually for all plots
@@ -109,30 +108,31 @@ allStds = arrayfun(@(i)std([allDeviationsLast{i}{:}]), 1:numel(allDeviationsLast
 allMeanTimes = cellfun(@(c)mean(c,'omitnan'), {results.timeTaken});
 
 % If MTT: Output association quality
-if size(groundtruths{1}, 3) > 1
-    ass = NaN(numel(results), numel(results(1).associations));
-    labelChange = NaN(numel(results), numel(results(1).associations));
-    for config = 1:numel(results)
-        for run = 1:numel(results(1).associations)
-            ass(config, run) = sum(sum(reshape(1:size(results(config).associations{run}, 3), 1, 1, []) == results(config).associations{run}, 2));
-            labelChange(config, run) = sum(sum(diff(results(config).associations{run}) ~= 0));
-        end
-        %fprintf('Correct: %s %d %5.5G\n',results(config).filterName,results(config).filterParams,mean(ass(config,:)));
-        fprintf('Label switches: %s %d %5.5G\n', results(config).filterName, results(config).filterParams, mean(labelChange(config, :)));
-    end
-end
+% if size(groundtruths{1}, 3) > 1
+%     ass = NaN(numel(results), numel(results(1).associations));
+%     labelChange = NaN(numel(results), numel(results(1).associations));
+%     for config = 1:numel(results)
+%         for run = 1:numel(results(1).associations)
+%             ass(config, run) = sum(sum(reshape(1:size(results(config).associations{run}, 3), 1, 1, []) == results(config).associations{run}, 2));
+%             labelChange(config, run) = sum(sum(diff(results(config).associations{run}) ~= 0));
+%         end
+%         %fprintf('Correct: %s %d %5.5G\n',results(config).filterName,results(config).filterParams,mean(ass(config,:)));
+%         fprintf('Label switches: %s %d %5.5G\n', results(config).filterName, results(config).filterParams, mean(labelChange(config, :)));
+%     end
+% end
 
 % To sort according to the desired order. Flip iff and sqff to
 % ensure the dashed line for iff is not overdrawn by the solid line
 % for sqff
 supportedFiltersShortNames = {'se2ukfm', 'se2bf', 's3f', 'grid', 'iff', 'sqff', 'pf', 'htpf', 'vmf', 'bingham', 'wn', 'vm', 'twn', ...
-    'kf', 'ishf', 'sqshf', 'htgf', 'sgf', 'hgf', 'hgfSymm', 'hhgf', 'randomTorus', 'randomSphere', 'fig', 'figResetOnPred'};
+    'kf', 'ishf', 'sqshf', 'htgf', 'sgf', 'hgf', 'hgfSymm', 'hhgf', 'randomTorus', 'randomSphere', 'fig', 'figResetOnPred','gnn','GNN'};
 supportedFiltersLongNames = {'Unscented KF for Manifolds', '(Progressive) SE(2) Bingham filter', 'State space subdivision filter', 'Grid filter', 'Fourier identity filter', 'Fourier square root filter', 'Particle filter', 'Particle filter', ...
     'Von Mises--Fisher filter', 'Bingham filter', 'Wrapped normal filter', 'Von Mises filter', 'Bivariate WN filter', 'Kalman filter', ...
     'Spherical hamonics identity filter', 'Spherical hamonics square root filter', 'Hypertoroidal grid filter', ...
     'Spherical grid filter', 'Hyperspherical grid filter', ...
     'Symmetric hyperspherical grid filter', 'Hyperhemispherical grid filter', 'Random filter', 'Random filter',...
-    'Fourier-interpreted grid filter', 'FIG-Filter with resetting on prediction'};
+    'Fourier-interpreted grid filter', 'FIG-Filter with resetting on prediction', 'Global Nearest Neighbor'...
+    'Global Nearest Neighbor'};
 
 filterNames = supportedFiltersShortNames(ismember(supportedFiltersShortNames, {results.filterName}));
 if numel(filterNames) < numel(unique({results.filterName}))
@@ -252,17 +252,17 @@ for name = filterNames
         end
     end
     % Results for MTT
-    if size(groundtruths{1}, 3) > 1
-        figure(11)
-        filterIndices = find(isCorrectFilter);
-        if ~any(isnan(paramsSorted))
-            handlesAssociationErrorOverParam(end+1) = plot(paramsSorted, mean(labelChange(filterIndices(order), :), 2), [styleMarker, styleLine], 'color', color); %#ok<AGROW>
-        else
-            handlesAssociationErrorOverParam(end+1) = plot([minParam, maxParam], ...
-                mean(labelChange(filterIndices(order), :), 2)*ones(1, 2), [styleMarker, styleLine], 'color', color); %#ok<AGROW>
-        end
-        hold on
-    end
+%     if size(groundtruths{1}, 3) > 1
+%         figure(11)
+%         filterIndices = find(isCorrectFilter);
+%         if ~any(isnan(paramsSorted))
+%             handlesAssociationErrorOverParam(end+1) = plot(paramsSorted, mean(labelChange(filterIndices(order), :), 2), [styleMarker, styleLine], 'color', color); %#ok<AGROW>
+%         else
+%             handlesAssociationErrorOverParam(end+1) = plot([minParam, maxParam], ...
+%                 mean(labelChange(filterIndices(order), :), 2)*ones(1, 2), [styleMarker, styleLine], 'color', color); %#ok<AGROW>
+%         end
+%         hold on
+%     end
     % Store results for filter
     [~, indexForStruct] = ismember(nameStr, {paramTimeAndErrorPerFilter.filterName});
     paramTimeAndErrorPerFilter(indexForStruct).allParams = paramsSorted;

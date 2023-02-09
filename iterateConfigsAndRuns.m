@@ -1,7 +1,6 @@
 function [results, groundtruths, measurements] = iterateConfigsAndRuns(scenarioParam, filters, noRuns, convertToPointEstimateDuringRuntime, extractAllPointEstimates, tolerateFailure, autoWarningOnOff)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.1
 arguments (Input)
     scenarioParam (1,1) struct
     filters (1,:) struct
@@ -42,7 +41,11 @@ for r = 1:noRuns
     % can be sure they are identical even for filters that use the random
     % number generator)
     rng(scenarioParam.allSeeds(r));
-    x0 = scenarioParam.initialPrior.sample(1);
+
+    x0 = NaN(scenarioParam.initialPrior(1).dim, 1, scenarioParam.nTargets);
+    for targetNo = 1:scenarioParam.nTargets
+        x0(:, 1, targetNo) = scenarioParam.initialPrior(targetNo).sample(1);
+    end
     % x0 is saved as well
     groundtruths{r} = generateGroundtruth(x0, scenarioParam);
     measurements(r, :) = generateMeasurements(groundtruths{r}, scenarioParam);
@@ -129,7 +132,13 @@ allNames = [namesRepeated{:}];
 results = struct('filterName', allNames, 'filterParams', num2cell(cell2mat({filters.filterParams})), ...
     'timeTaken', num2cell(t, 2)');
 if ~convertToPointEstimateDuringRuntime
-    lastFilterStatesCellArranged = arrayfun(@(i)[lastFilterStates{i, :}]', 1:size(lastFilterStates, 1), 'UniformOutput', false);
+    if numel(lastFilterStates{1, 1})>1
+        % Reshape to the size according to the convention we use
+        assert(contains(scenarioParam.manifoldType, 'MTT'), 'Multiple states were returned in a single run for a single-target scenario. This is unexpected.');
+        lastFilterStates = cellfun(@(state){reshape(state,1,1,[])},lastFilterStates);
+    end
+    assert(numel(results)==size(lastFilterStates,1));
+    lastFilterStatesCellArranged = arrayfun(@(i)[lastFilterStates{i, :}], 1:size(lastFilterStates,1), 'UniformOutput', false);
     [results.lastFilterStates] = lastFilterStatesCellArranged{:};
 end
 if convertToPointEstimateDuringRuntime || extractAllPointEstimates

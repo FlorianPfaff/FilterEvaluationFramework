@@ -63,6 +63,22 @@ elseif isa(filter, 'AbstractSE2Filter') || isa(filter.getEstimate(), 'AbstractSE
     ylim(ylimits)
     AbstractSE2Distribution.plotSE2trajectory(groundtruth(1, (max(timeIndex - 10, 1)):timeIndex), groundtruth(2:3, (max(timeIndex - 10, 1)):timeIndex), false);
     scatter(measurements(1, (max(timeIndex - 10, 1)):timeIndex), measurements(2, (max(timeIndex - 10, 1)):timeIndex), 'x');
+elseif isa(filter, 'AbstractLinearFilter') || isa(filter.getEstimate(), 'AbstractLinearDistribution')
+    switch this.dim
+        case 2
+            filter.plotFilterState();
+            scatter(currentGroundtruth(1), currentGroundtruth(2));
+        case 3
+            filter.plotFilterState();
+            scatter3(currentGroundtruth(1), currentGroundtruth(2), currentGroundtruth(3));
+        otherwise
+            error('Dimension currently unsupported.')
+    end
+elseif isa(filter, 'AbstractMultitargetTracker')
+    if isfield(scenarioParam, 'observedArea')
+        axes(scenarioParam.observedArea);
+    end
+    filter.plotFilterState();
 else
     filter.plotFilterState();    
 end

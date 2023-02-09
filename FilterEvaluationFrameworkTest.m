@@ -6,7 +6,8 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
         matlab.unittest.fixtures.SuppressedWarningsFixture(...
         {'MATLAB:hg:AutoSoftwareOpenGL', 'PlotResults:FewRuns',...
         'Normalization:notNormalized', 'Normalization:negative',...
-        'FilterEvaluationFramework:TWNUniform'})})...
+        'FilterEvaluationFramework:TWNUniform',...
+        'getDistanceFunMeanCalcAndLabel:OSPAUnspecifiedCutoff'})})...
         FilterEvaluationFrameworkTest < matlab.unittest.TestCase
     % @author Florian Pfaff pfaff@kit.edu
     % @date 2016-2023
@@ -342,6 +343,133 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
             measurements = generateMeasurements(groundtruth, scenarioParam);
             testCase.verifySize(measurements, [1,scenarioParam.timesteps])
             cellfun(@(m)testCase.verifySize(m, [2,3]), measurements)
+        end
+        
+        function testDistanceMetricMTTOspaZeroWhenEqualSingleTarget(testCase)
+            distanceFunction = getDistanceFunMeanCalcAndLabel('MTTEuclidean');
+            % Distance should be zero when both are equal (for 1 target)
+            testCase.verifyEqual(distanceFunction([1;2;3;4],[1;2;3;4]), 0);
+            testCase.verifyEqual(distanceFunction([1;2;3;4;5;6],[1;2;3;4;5;6]), 0);
+            % Distance should still be zero when only the velocity differs (for 1 target)
+            testCase.verifyEqual(distanceFunction([1;10;3;30],[1;20;3;40]), 0);
+            testCase.verifyEqual(distanceFunction([1;10;3;30;5;50],[1;20;3;40;5;60]), 0);
+        end
+        function testDistanceMetricMTTOspaZeroWhenEqualMultiTarget(testCase)
+            distanceFunction = getDistanceFunMeanCalcAndLabel('MTTEuclidean');
+            % Distance should be zero when both are equal (for 2 targets)
+            testCase.verifyEqual(distanceFunction([[10;30;40;50],[10;30;40;50]+10],...
+                [[10;30;40;50],[10;30;40;50]+10]), 0);
+            testCase.verifyEqual(distanceFunction([[10;30;40;50;0;0],[10;30;40;50;0;0]+10],...
+                [[10;30;40;50;0;0],[10;30;40;50;0;0]+10]), 0);
+            % Distance should still be zero when only the velocity differs (for 2 targets)
+            testCase.verifyEqual(distanceFunction([[10;30;40;50],[10;30;40;50]+10],...
+                [[10;130;40;150],[10;130;40;150]+10]), 0);
+            testCase.verifyEqual(distanceFunction([[10;30;40;50;0;0],[10;30;40;50;0;0]+10],...
+                [[10;130;40;150;0;0],[10;130;40;150;0;0]+10]), 0);
+            % Distance should still be zero even when the target order is
+            % swapped
+            testCase.verifyEqual(distanceFunction([[10;30;40;50],[10;30;40;50]+10],...
+                [[10;130;40;150]+10,[10;130;40;150]]), 0);
+            testCase.verifyEqual(distanceFunction([[10;30;40;50;0;0],[10;30;40;50;0;0]+10],...
+                [[10;130;40;150;0;0]+10,[10;130;40;150;0;0]]), 0);
+        end
+
+        function testDistanceMetricMTTOspaWhenUnequalSingleTarget(testCase)
+            distanceFunction = getDistanceFunMeanCalcAndLabel('MTTEuclidean');
+            % Test some examples for which we can easily determine the real
+            % value
+            trackStates = [1;2;3;4];
+            testCase.verifyEqual(distanceFunction(trackStates, trackStates), 0);
+            for padTo3D = [false, true]
+                trackStatesCurr = [trackStates; zeros(2*padTo3D, size(trackStates,2))];
+                for i = 1:numel(trackStatesCurr)
+                    % Change all values in the matrix for the true state
+                    % isolatedly.
+                    truthsCurr = trackStatesCurr;
+                    truthsCurr(i) = truthsCurr(i) + 5;
+                    % If even: Is velocity. If odd: Is position
+                    if mod(i,2)==0
+                        testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), 0);
+                    else
+                        testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), 5);
+                    end
+                end
+                % Now, always modify the first entry (which is a position component)
+                % and then try changing all of the others
+                for i = 2:numel(trackStatesCurr)
+                    % Change all values in the matrix for the true state
+                    % isolatedly.
+                    truthsCurr = trackStatesCurr;
+                    truthsCurr(1) = truthsCurr(1) + 5;
+                    truthsCurr(i) = truthsCurr(i) + 5;
+                    % If even: Is velocity. If odd: Is position
+                    if mod(i,2)==0
+                        testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), 5);
+                    else
+                        testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), sqrt(2*5^2), 'AbsTol', 1e-10);
+                    end
+                end
+            end
+        testCase.verifyEqual(distanceFunction([1;2;3;4;5;6],[11;2;13;4;15;6]), sqrt(3*10^2));
+        testCase.verifyEqual(distanceFunction([1;2;3;4;5;6],[11;12;13;14;15;16]), sqrt(3*10^2));
+        end
+        
+        function testDistanceMetricMTTOspaWhenUnequalMultitarget(testCase)
+            distanceFunction = getDistanceFunMeanCalcAndLabel('MTTEuclidean');
+            trackStates = [[10;30;40;50],[10;30;40;50]+10];
+            testCase.verifyEqual(distanceFunction(trackStates,trackStates), 0);
+            % Should not depend on the order of the true states
+            for swapOrderForTruth = [false, true]
+                % Try for 2-D tracking with 4 components and 3-D tracking with
+                % 6 components.
+                for padTo3D = [false, true]
+                    trackStatesCurr = [trackStates; zeros(2*padTo3D, size(trackStates,2))];
+                    for i = 1:numel(trackStatesCurr)
+                        % Change all values in the matrix for the true state
+                        % isolatedly.
+                        truthsCurr = trackStatesCurr;
+                        if swapOrderForTruth
+                            truthsCurr = fliplr(truthsCurr);
+                        end
+                        truthsCurr(i) = truthsCurr(i) + 3;
+                        % If even: Is velocity. If odd: Is position
+                        if mod(i,2)==0
+                            testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), 0);
+                        else
+                            testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), sqrt(1/2*3^2));
+                        end
+                    end
+                    % Now, always modify the first entry (which is a position component)
+                    % and then try changing all of the others
+                    for i = 2:numel(trackStatesCurr)
+                        % Change all values in the matrix for the true state
+                        % isolatedly.
+                        truthsCurr = trackStatesCurr;
+                        if swapOrderForTruth
+                            truthsCurr = fliplr(truthsCurr);
+                        end
+                        truthsCurr(1) = truthsCurr(1) + 3;
+                        truthsCurr(i) = truthsCurr(i) + 3;
+                        % If even: Is velocity. If odd: Is position
+                        if mod(i,2)==0
+                            testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), sqrt(1/2*3^2));
+                        else
+                            testCase.verifyEqual(distanceFunction(trackStatesCurr,truthsCurr), 3, 'AbsTol', 1e-10);
+                        end
+                    end
+                end
+            end
+        end
+
+        function testMTT(testCase)
+            tempFixture = testCase.getSharedTestFixtures();
+            scenarioName = 'MTT3targetsR2';
+            filters = struct( ...
+                'name', {'GNN'}, 'filterParams', {NaN});
+            startEvaluation(scenarioName, filters, testCase.noRunsDefault,...
+                saveFolder = tempFixture(1).Folder, initialSeed = 1, autoWarningOnOff=false);
+            paramTimeAndErrorPerFilter = plotResults();
+            testCase.verifyLessThan([paramTimeAndErrorPerFilter.meanErrorAllConfigs], 10);
         end
     end
 end

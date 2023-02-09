@@ -355,7 +355,7 @@ switch scenario
         %%%%%%%%%%%%%%%%%%%%%%%%%% MTT scenarios %%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     case 'MTT3targetsR2'
-        scenarioParam.timesteps = 10;
+        scenarioParam.timesteps = 100;
         scenarioParam.manifoldType = 'MTTEuclidean';
         scenarioParam.T = 1;
         scenarioParam.nTargets = 3;

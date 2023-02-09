@@ -1,9 +1,9 @@
-function [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode)
+function [distanceFunction, extractMean, errorLabel] = getDistanceFunMeanCalcAndLabel(mode, additionalParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.1
 arguments (Input)
     mode char
+    additionalParams = []
 end
 arguments (Output)
     distanceFunction (1,1) function_handle
@@ -73,6 +73,24 @@ switch mode
         distanceFunction = @(x1, x2)vecnorm(x1-x2);
         extractMean = @(filterState)filterState.mean();
         errorLabel = 'Error in meters';
+    case {'MTTEuclidean'}
+        % Pad to 3-D vector if 2-D and convert to format for OSPA from
+        % toolbox.
+        if isempty(additionalParams)
+            cutoffDistance = 1000000;
+            warning('getDistanceFunMeanCalcAndLabel:OSPAUnspecifiedCutoff',...
+                'Cutoff distance unspecified. Setting it to 1000 (=sqrt(1000000)) in respect to the Euclidean distance.')
+        else
+            cutoffDistance = additionalParams.cutoffDistance;
+        end
+        track = @(x)arrayfun(@(i)objectTrack('State',[x(:,i);zeros(6-size(x,1),1)],'StateCovariance',eye(6)),1:size(x,2));
+        truth = @(x)arrayfun(@(i)struct('Position',[x(1:2:end,i)',zeros(1, 3-size(x,1)/2)],...
+            'Velocity',[x(2:2:end,i)',zeros(1,3-size(x,1)/2)]),1:size(x,2));
+
+        ospMet = trackOSPAMetric('Distance', 'posabserr', 'CutoffDistance', cutoffDistance);
+        distanceFunction = @(x1, x2)ospMet(track(x1),truth(x2));
+        extractMean = @(filterState)cell2mat(arrayfun(@(gaussian)gaussian.mean, filterState, 'UniformOutput', false));
+        errorLabel = 'OSPA error in meters';
     otherwise
         error('Mode not recognized');
 end

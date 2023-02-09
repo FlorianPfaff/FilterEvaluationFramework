@@ -1,7 +1,6 @@
 function [filter, predictionRoutine, likelihoodForFilter, measNoiseForFilter] = configureForFilter(filterParam, scenarioParam, precalculatedParams)
 % @author Florian Pfaff pfaff@kit.edu
 % @date 2016-2023
-% V3.1
 arguments  (Input)
     filterParam (1,1) struct
     scenarioParam (1,1) struct
@@ -278,6 +277,11 @@ switch filterParam.name
             filter = HypersphericalDummyFilter(scenarioParam.initialPrior.dim);
         end
         predictionRoutine = @()NaN; % Do nothing
+    % Multitarget trackers
+    case {'gnn', 'GNN'}
+        filter = GNN(scenarioParam.initialPrior, false);
+        predictionRoutine = @()filter.predictLinear(...
+            scenarioParam.sysMatrixForEachTarget, scenarioParam.sysNoise);
     otherwise
         error('Filter currently unsupported');
 end
