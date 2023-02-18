@@ -209,7 +209,7 @@ classdef (SharedTestFixtures={matlab.unittest.fixtures.TemporaryFolderFixture,..
             tempFixture = testCase.getSharedTestFixtures();
             scenarioName = 'R2randomWalk';
             filters = struct( ...
-                'name', {'kf', 'pf'}, 'filterParams', {NaN, [31, 51]});
+                'name', {'kf', 'pf'}, 'filterParams', {NaN, [51, 81]});
             startEvaluation(scenarioName, filters, testCase.noRunsDefault,...
                 saveFolder = tempFixture(1).Folder, initialSeed = 1, autoWarningOnOff=false);
             paramTimeAndErrorPerFilter = plotResults();
