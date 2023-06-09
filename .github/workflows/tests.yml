@@ -28,6 +28,12 @@ jobs:
           repository: libDirectional/libDirectional
           path: libDirectional
 
+      - name: Check out Multitarget-Tracking-Toolbox repository
+        uses: actions/checkout@v3
+        with:
+          repository: FlorianPfaff/Multitarget-Tracking-Toolbox
+          path: Multitarget-Tracking-Toolbox
+
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v1
 
@@ -41,7 +47,7 @@ jobs:
         with:
           test-results-junit: test-results/results.xml
           code-coverage-cobertura: code-coverage/coverage.xml
-          source-folder: FilterEvaluationFramework;libDirectional/lib
+          source-folder: FilterEvaluationFramework;libDirectional/lib;Multitarget-Tracking-Toolbox/trackers
           select-by-folder: FilterEvaluationFramework
 
       - name: Publish Unit Test Results
