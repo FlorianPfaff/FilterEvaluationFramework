@@ -25,7 +25,7 @@ jobs:
       - name: Check out libDirectional repository
         uses: actions/checkout@v3
         with:
-          repository: libDirectional/libDirectional
+          repository: FlorianPfaff/libDirectional
           path: libDirectional
 
       - name: Check out Multitarget-Tracking-Toolbox repository
