@@ -1,0 +1,117 @@
+name: Run MATLAB Tests on GitHub-Hosted Runner
+
+permissions: read-all
+
+on: # yamllint disable-line rule:truthy
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  run-tests:
+    name: Checkout, Compile and Test
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Check out FilterEvaluationFramework repository
+        uses: actions/checkout@v3
+        with:
+          path: FilterEvaluationFramework
+
+      - name: Check out libDirectional repository
+        uses: actions/checkout@v3
+        with:
+          repository: FlorianPfaff/libDirectional
+          path: libDirectional
+
+      - name: Check out Multitarget-Tracking-Toolbox repository
+        uses: actions/checkout@v3
+        with:
+          repository: FlorianPfaff/Multitarget-Tracking-Toolbox
+          path: Multitarget-Tracking-Toolbox
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v1
+
+      - name: Add lib directory to path and compile
+        uses: matlab-actions/run-command@v1
+        with:
+          command: "addpath(genpath('libDirectional')); compileAll;"
+
+      - name: Run tests in FilterEvaluationFramework/tests
+        uses: matlab-actions/run-tests@v1
+        with:
+          test-results-junit: test-results/results.xml
+          code-coverage-cobertura: code-coverage/coverage.xml
+          source-folder: FilterEvaluationFramework;libDirectional/lib;Multitarget-Tracking-Toolbox/trackers
+          select-by-folder: FilterEvaluationFramework
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-results/results.xml
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'  # Or another version if Matlab requires it
+
+      - name: Display coverage.xml before modifications
+        run: cat code-coverage/coverage.xml
+  
+      - name: Remove libDirectional from coverage.xml and recalculate coverage
+        run: |
+          echo "Installing lxml..."
+          pip install lxml
+          
+          echo "Modifying coverage.xml..."
+          python - << END
+          import lxml.etree as ET
+
+          tree = ET.parse('code-coverage/coverage.xml')
+          root = tree.getroot()
+
+          total_lines = 0
+          total_covered = 0
+
+          for class_ in root.findall(".//class"):
+              filename = class_.get('filename')
+              if filename.startswith('libDirectional') or filename.startswith('Multitarget-Tracking-Toolbox'):
+                  class_.getparent().remove(class_)
+              else:
+                  for line in class_.findall('.//line'):
+                      total_lines += 1
+                      if int(line.get('hits')) > 0:
+                          total_covered += 1
+
+          # Recalculate coverage percentage
+          coverage = (float(total_covered) / total_lines) * 100 if total_lines != 0 else 0
+
+          # Update the root element's attributes
+          root.set('lines-valid', str(total_lines))
+          root.set('lines-covered', str(total_covered))
+          root.set('line-rate', str(coverage / 100))
+
+          # Update package attributes
+          for package in root.findall('.//package'):
+              package.set('lines-valid', str(total_lines))
+              package.set('lines-covered', str(total_covered))
+              package.set('line-rate', str(coverage / 100))
+
+          tree.write('code-coverage/coverage.xml')
+          END
+       
+      - name: Display coverage.xml after modifications
+        run: cat code-coverage/coverage.xml
+
+      - name: Publish Code Coverage Results
+        uses: 5monkeys/cobertura-action@master
+        if: always()
+        with:
+          path: code-coverage/coverage.xml
+          minimum_coverage: 20
